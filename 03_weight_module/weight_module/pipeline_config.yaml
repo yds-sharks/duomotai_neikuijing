@@ -1,0 +1,92 @@
+version: v1.0
+
+paths:
+  raw_input_jsonl: /mnt/data_1/yds/多模态/data_house/origin_data/image_text/output_pairs_all_min_filtered.jsonl
+  workspace_root: /mnt/data_1/yds/多模态/权重模块
+  outputs_dir: /mnt/data_1/yds/多模态/权重模块/outputs
+
+cleaning:
+  min_char_len: 8
+  max_char_len: 400
+  strip_newlines: true
+  collapse_whitespace: true
+  deduplicate_by: text_norm_hash
+  drop_low_confidence_patterns:
+    - 无法判断
+    - 看不清
+    - 不清晰
+    - 未能明确
+  keep_filtered_examples: 200
+
+api:
+  key_env: OPENAI_API_KEY
+  base_url: https://api.deerapi.com/v1
+  primary_model: gpt-4o-mini
+  fallback_models:
+    - gpt-4o
+
+request:
+  batch_size: 12
+  concurrency: 8
+  max_retries: 4
+  timeout_seconds: 120
+  temperature: 0.0
+  use_json_response_format: true
+  max_samples: null
+
+pilot:
+  seed: 20260423
+  target_anchors: 1000
+  train_split_only: true
+  source_split_file: /mnt/data_1/yds/多模态/权重模块/outputs/anchor_pool.mainset_14000.split.jsonl
+  class_quota:
+    A: 467
+    B: 465
+    C: 68
+
+generation_stage:
+  generation_model: gpt-4o-mini
+  review_model: gpt-4o-mini
+  generation_batch_size: 1
+  review_batch_size: 1
+  concurrency: 6
+  max_retries: 4
+  timeout_seconds: 120
+  temperature_generate: 0.55
+  temperature_review: 0.0
+  use_json_response_format: true
+  max_review_repair_rounds: 1
+
+anchor_scoring:
+  count_caps:
+    anatomy: 2
+    lesion: 2
+    attribute: 3
+    distribution: 2
+    severity: 2
+  weights:
+    anatomy: 0.24
+    lesion: 0.28
+    attribute: 0.16
+    distribution: 0.12
+    severity: 0.10
+    specificity: 0.10
+    generic_penalty: 0.10
+    deictic_penalty: 0.08
+  thresholds:
+    class_A_min: 0.60
+    class_B_min: 0.35
+  enable_score_clamp_01: true
+
+stage3_outputs:
+  pilot_anchor_input: /mnt/data_1/yds/多模态/权重模块/outputs/generation_input.pilot_1000.jsonl
+  pilot_anchor_stats: /mnt/data_1/yds/多模态/权重模块/outputs/generation_input.pilot_1000.stats.json
+  generated_chain_pilot: /mnt/data_1/yds/多模态/权重模块/outputs/generated_chain.pilot.jsonl
+  generated_chain_errors: /mnt/data_1/yds/多模态/权重模块/outputs/generated_chain.pilot.errors.jsonl
+  reviewed_chain_pilot: /mnt/data_1/yds/多模态/权重模块/outputs/reviewed_chain.pilot.jsonl
+  rejected_chain_pilot: /mnt/data_1/yds/多模态/权重模块/outputs/rejected_chain.pilot.jsonl
+  review_errors: /mnt/data_1/yds/多模态/权重模块/outputs/reviewed_chain.pilot.errors.jsonl
+  quality_report_pilot: /mnt/data_1/yds/多模态/权重模块/outputs/quality_report.pilot.json
+  density_cls_pilot: /mnt/data_1/yds/多模态/权重模块/outputs/density_cls.pilot.jsonl
+  dependency_cls_pilot: /mnt/data_1/yds/多模态/权重模块/outputs/dependency_cls.pilot.jsonl
+  density_rank_pilot: /mnt/data_1/yds/多模态/权重模块/outputs/density_rank.pilot.jsonl

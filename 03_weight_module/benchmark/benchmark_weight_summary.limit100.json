@@ -1,0 +1,38 @@
+{
+  "benchmark": "Saint-lsy/EndoBench",
+  "split": "test",
+  "filters": {
+    "dataset": "all",
+    "task": "all",
+    "scene": "all",
+    "category": "all",
+    "subtask": "all",
+    "limit": 100,
+    "offset": 0,
+    "shuffle": false,
+    "seed": 42
+  },
+  "output_jsonl": "/mnt/data_1/yds/多模态/benchmark_weight_outputs.limit100.jsonl",
+  "summary": {
+    "total_samples": 100,
+    "density_counts": {
+      "L2": 100
+    },
+    "image_dependency_counts": {
+      "R2": 100
+    },
+    "combo_counts": {
+      "L2|R2": 100
+    },
+    "category_density_counts": {
+      "Anatomical Structure Recognition": {
+        "L2": 100
+      }
+    },
+    "category_dependency_counts": {
+      "Anatomical Structure Recognition": {
+        "R2": 100
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+task: density_cls
+
+data:
+  path: /mnt/data_1/yds/多模态/权重模块/最终结果/coarse_filter_exact_routing/density2_cls.coarse_filter_exact_routing.jsonl
+  label_field: density_label
+  input_mode: query_only
+  max_train_samples: null
+  max_val_samples: null
+  max_test_samples: null
+
+model:
+  name_or_path: /mnt/data_1/yds/微调/models/mengzi-bert-base
+  num_labels: 2
+  max_length: 96
+  dropout: 0.1
+
+train:
+  seed: 20260428
+  device: auto
+  epochs: 3
+  batch_size: 32
+  gradient_accumulation_steps: 1
+  learning_rate: 2.0e-5
+  weight_decay: 0.01
+  class_weight: auto_balanced
+  max_grad_norm: 1.0
+  fp16: true
+  num_workers: 2
+
+eval:
+  batch_size: 64
+
+output:
+  dir: /mnt/data_1/yds/多模态/权重模块/checkpoints/density2_coarsefilter_mengzi

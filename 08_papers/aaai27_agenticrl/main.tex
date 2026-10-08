@@ -1,0 +1,50 @@
+%File: main.tex
+%Paper: AgenticRL (AAAI 2027 Anonymous Submission)
+\documentclass[letterpaper]{article} % DO NOT CHANGE THIS
+\usepackage[submission]{aaai2027}  % DO NOT CHANGE THIS
+% Fonts are loaded automatically by aaai2027.sty.
+\usepackage[hyphens]{url}  % DO NOT CHANGE THIS
+\usepackage{graphicx} % DO NOT CHANGE THIS
+\urlstyle{rm} % DO NOT CHANGE THIS
+\def\UrlFont{\rm}  % DO NOT CHANGE THIS
+\usepackage{natbib}  % DO NOT CHANGE THIS AND DO NOT ADD ANY OPTIONS TO IT
+\usepackage{caption} % DO NOT CHANGE THIS AND DO NOT ADD ANY OPTIONS TO IT
+\frenchspacing  % DO NOT CHANGE THIS
+
+% Math and tables (allowed)
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{multirow}
+
+\pdfinfo{
+/TemplateVersion (2027.1)
+}
+
+\setcounter{secnumdepth}{0} % AAAI: no section numbers by default
+
+% Graphics path
+\graphicspath{{figures/}}
+
+% ==== Title ====
+% Mixed case per AAAI rules.
+\title{AgenticRL: Training RAG Controllers with Generator-Derived Rewards and Online Retrieval Feedback}
+
+\author{
+    Anonymous Submission
+}
+\affiliations{}
+
+\begin{document}
+
+\maketitle
+
+\input{sections/abstract}
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/method}
+\input{sections/experiments}
+\input{sections/conclusion}
+
+\bibliography{references}
+
+\end{document}

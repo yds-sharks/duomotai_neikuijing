@@ -1,0 +1,4 @@
+Supportiveness-aware reranking improves pathology evidence ranking.
+Lexicon-guided hybrid retrieval expands candidate coverage.
+SEV reranks fixed candidates without increasing retrieval depth.
+YpathRAG improves evidence-grounded pathology QA across LLMs.

@@ -1,0 +1,293 @@
+Hybrid BM25 + BGE-M3 向量库（Milvus-Lite）使用说明
+1. 环境与准备
+
+Python ≥ 3.9
+
+关键依赖：pymilvus, torch, sentencepiece, jieba, tqdm, numpy, scipy, pyyaml
+
+本项目基于 Milvus-Lite（本地 .db 文件），无需独立服务端。
+
+你需要准备好 config.yaml（你已有），其中至少包含：
+
+paths: 词表、停用词、模型路径、统计文件目录等
+
+bm25: k1/b/IDF 等参数
+
+milvus: uri（形如 /path/to/*.db）、集合名、索引参数
+
+insert: 插入批大小、检查点目录等
+
+retrieval: topk、融合权重与归一化
+
+语料统计文件：运行前需在 paths.stats_out_dir 下存在 corpus_stats.json（本项目的 BM25Vectorizer 会加载它：包含 df / N / avgdl / token2id 等）。
+
+2. 目录/模块说明（简述）
+
+bm25_bge_vectorstore_v2/tokenizers.py
+分词与词表加载；中英文混合分词、停用词过滤、单字过滤等。
+
+bm25_bge_vectorstore_v2/bm25_vectorizer.py
+BM25 向量化（文档/查询），输出稀疏向量 {indices, values}。
+
+bm25_bge_vectorstore_v2/dense_embedder.py
+BGE-M3 编码（句向量）。
+
+bm25_bge_vectorstore_v2/milvus_client.py
+Milvus-Lite 封装：建表/索引、插入、查询、稠密/稀疏检索、去重。
+
+bm25_bge_vectorstore_v2/retrieval_service.py
+HybridRetriever：同时发起稠密/稀疏检索，按配置做归一化与融合，返回结果。
+
+bm25_bge_vectorstore_v2/cli_insert.py
+命令行批量插入器（含 text_hash 去重、失败批次二分剔除脏样本）。
+
+bm25_bge_vectorstore_v2/cli_query.py
+命令行检索器（读取配置、打印融合后的 topK）。
+
+3. 配置要点（摘录）
+
+config.yaml（关键段落）：
+
+milvus:
+  uri: "/path/to/bm25.db"
+  collection: "cervix_v2"
+  dims_dense: 1024
+  index_dense:
+    type: "IVF_FLAT"          # Lite：推荐 IVF_FLAT / FLAT / AUTOINDEX
+    metric: "IP"
+    params: { nlist: 8192 }   # 建索引桶数（经验：~sqrt(num_entities) 向上取）
+    search_params: { nprobe: 32 }  # 搜索时探测桶数（24~48 常用）
+  index_sparse:
+    type: "SPARSE_INVERTED_INDEX"
+    metric: "IP"
+
+retrieval:
+  topk: 20
+  fusion:
+    normalize: { dense: "none", sparse: "zscore" }  # 稀疏 Z-Score 较稳
+    weights:   { dense: 0.6,   sparse: 0.4 }        # 中英文混合检索推荐
+    lang_adapt:
+      zh_sparse: 0.4
+      en_sparse: 0.4
+
+4. 建库/建索引
+
+初次插入会自动建表与索引；若你要重建/调参（比如把 nlist 改为 8192），可用下面管理脚本。
+
+4.1 自动建表与索引（随插入自动完成）
+
+执行插入命令（见 §5），milvus_client.ensure_collection() 会按配置创建集合和索引。
+
+4.2（可选）重新构建稠密索引（修改 nlist）
+
+保存为 reindex_dense.py，运行它可安全重建 dense_vector 索引：
+
+# reindex_dense.py
+import yaml
+from pymilvus import connections, Collection
+
+CFG = "/path/to/config.yaml"
+cfg = yaml.safe_load(open(CFG, "r", encoding="utf-8"))
+
+uri  = cfg["milvus"]["uri"]
+user = cfg["milvus"].get("user",""); pwd = cfg["milvus"].get("password","")
+db   = cfg["milvus"].get("db_name","default")
+name = cfg["milvus"]["collection"]
+
+idx_params = cfg["milvus"]["index_dense"]
+metric = idx_params.get("metric") or idx_params.get("metric_type") or "IP"
+nlist  = int(idx_params.get("params",{}).get("nlist", 8192))
+
+connections.connect("default", uri=uri, user=user, password=pwd, db_name=db)
+c = Collection(name); c.load()
+
+# 打印现有索引
+print("== BEFORE ==")
+for i in c.indexes:
+    print(" -", {"field": i.field_name, "name": i.index_name, "params": dict(i.params)})
+
+# 删除并重建 dense 索引
+dense_idx_name = next((i.index_name for i in c.indexes if i.field_name=="dense_vector"), "dense_vector")
+print(f"[drop] dense index: {dense_idx_name}")
+c.drop_index(dense_idx_name)
+
+c.create_index(
+    field_name="dense_vector",
+    index_params={"index_type": "IVF_FLAT", "metric_type": metric, "params": {"nlist": nlist}},
+    index_name=f"dense_ivf_{nlist}"
+)
+
+print("== AFTER  ==")
+for i in c.indexes:
+    print(" -", {"field": i.field_name, "name": i.index_name, "params": dict(i.params)})
+
+print("num_entities:", c.num_entities)
+
+
+运行：
+
+python reindex_dense.py
+
+5. 插入数据
+5.1 数据格式
+
+遍历 paths.input_root 下的 *.json / *.jsonl，每条记录需要字段：
+
+原文（必需）：待索引正文
+
+摘要（可选）：缺失则自动截断 原文 生成
+
+来源文件（可选）：用于追踪来源
+
+5.2 插入命令
+CFG="/mnt/data_1/yds/RAG/Hybrid_milvus/总版/insert/config.yaml"
+python -m bm25_bge_vectorstore_v2.cli_insert --config "$CFG"
+
+
+特点：
+
+自动去重：按 text_hash 去重，避免重复写入。
+
+失败批次二分：如果批量插入报 ParamError，自动二分定位坏样本并记入 failed_batches.jsonl。
+
+断点续插：在 insert.checkpoint_dir 写入 checkpoint。
+
+5.3 插入完成后检查
+python - <<'PY'
+import yaml
+from pymilvus import connections, Collection
+CFG="/mnt/data_1/yds/RAG/Hybrid_milvus/总版/insert/config.yaml"
+cfg=yaml.safe_load(open(CFG,"r",encoding="utf-8"))
+connections.connect("default", uri=cfg["milvus"]["uri"], user=cfg["milvus"].get("user",""), password=cfg["milvus"].get("password",""), db_name=cfg["milvus"].get("db_name","default"))
+c=Collection(cfg["milvus"]["collection"]); print("num_entities:", c.num_entities)
+for i in c.indexes: print("index:", i.field_name, dict(i.params))
+PY
+
+6. 检索
+6.1 命令行检索
+python -m bm25_bge_vectorstore_v2.cli_query \
+  --config "/mnt/data_1/yds/RAG/Hybrid_milvus/总版/insert/config.yaml" \
+  --query "血管肉瘤 皮肤 头皮 软组织" \
+  --topk 5
+
+
+稀疏/稠密权重、归一化、语言自适应等均读取 config.yaml。
+
+你已验证纯稀疏、混合都可正常工作。
+
+6.2 性能建议
+
+将 milvus.index_dense.search_params.nprobe 设为 32（24~48 都可试，32对你的库最稳）。
+
+关闭大量日志打印（[DBG]/[DEBUG]）。
+
+常驻进程+热身（见下一节）避免冷启动/加载成本。
+
+7. 常驻 + 预热（热启动）脚本
+
+保存为 hot_retriever.py：
+
+# hot_retriever.py
+import os, time, yaml
+from bm25_bge_vectorstore_v2.retrieval_service import HybridRetriever
+
+# 推荐：限制线程噪声（按需调整）
+os.environ.setdefault("OMP_NUM_THREADS", "4")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "4")
+
+CFG = "/mnt/data_1/yds/RAG/Hybrid_milvus/总版/insert/config.yaml"
+cfg = yaml.safe_load(open(CFG, "r", encoding="utf-8"))
+
+svc = HybridRetriever(cfg)
+
+# 预加载集合/索引
+svc.collection.load()
+
+# 预热若干次（触发OS页缓存与Milvus内部缓存）
+for q in ["warmup", "血管肉瘤 皮肤", "HPV 宫颈癌"]:
+    try:
+        _ = svc.search(q)
+    except Exception as e:
+        print("warmup error:", e)
+
+print(">> Ready. Type your query (empty line to exit).")
+while True:
+    try:
+        q = input("Q> ").strip()
+    except EOFError:
+        break
+    if not q:
+        break
+    t0 = time.time()
+    out = svc.search(q)
+    dt = (time.time()-t0)*1000
+    top1 = out["results"][0] if out["results"] else {}
+    print(f"took {dt:.1f} ms | top1_score={top1.get('score')}")
+    for i, r in enumerate(out["results"][:5], 1):
+        print(f"#{i}  score={r['score']:.3f}  | file={r['file_name']}")
+        print("    ", (r["summary"] or r["text"])[:120].replace("\n"," "), "\n")
+
+
+运行：
+
+python hot_retriever.py
+
+
+特点：
+
+进程常驻，不再重复加载 jieba/BGE/索引。
+
+首问后延迟进入 60~70ms/次 区间（与你压测一致）。
+
+你可以把它改成 HTTP 服务（例如 FastAPI），但 REPL 已足够验证延迟与效果。
+
+8. FAQ & 小贴士
+
+库文件很大（8GB+）正常吗？
+你的库有 ~171 万条，既存稠密向量（float32×1024）+ 稀疏倒排 + 元数据，8GB 量级完全合理。Lite 单文件也包含索引结构与缓存元信息。
+
+为什么 CLI 感觉很慢？
+每次 python -m 都在冷启动（jieba/模型/索引加载、打印大量日志）。改用常驻脚本即可。
+
+如何再加速？
+
+固定 nprobe=32；fetch_k 不要太大；output_fields 只取必要字段；
+
+使用 GPU 编码（你已自动优先 cuda）；
+
+需要更极致：可以上分层召回（先稀疏粗召回再稠密精排）或蒸馏/压缩，但目前你的延迟已很好。
+
+9. 常用命令速查
+
+插入：
+
+python -m bm25_bge_vectorstore_v2.cli_insert --config "$CFG"
+
+
+检索：
+
+python -m bm25_bge_vectorstore_v2.cli_query --config "$CFG" --query "你的问题" --topk 5
+
+
+查看实体数/索引参数：
+
+python - <<'PY'
+import yaml
+from pymilvus import connections, Collection
+CFG="/mnt/data_1/yds/RAG/Hybrid_milvus/总版/insert/config.yaml"
+cfg=yaml.safe_load(open(CFG,"r",encoding="utf-8"))
+connections.connect("default", uri=cfg["milvus"]["uri"], user=cfg["milvus"].get("user",""), password=cfg["milvus"].get("password",""), db_name=cfg["milvus"].get("db_name","default"))
+c=Collection(cfg["milvus"]["collection"])
+print("num_entities:", c.num_entities)
+for i in c.indexes: print(i.field_name, dict(i.params))
+PY
+
+
+重建稠密索引（改 nlist）：
+
+python reindex_dense.py
+
+
+常驻热身：
+
+python hot_retriever.py

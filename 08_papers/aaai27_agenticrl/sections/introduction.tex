@@ -1,0 +1,112 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Retrieval-augmented generation (RAG) grounds model outputs in external
+evidence~\cite{lewis2020retrieval}, while multimodal extensions retrieve images
+and text for knowledge-intensive visual reasoning
+~\cite{chen2022murag,yasunaga2023retrieval,long2024gemkr}. However, the benefit
+of evidence-grounded generation is fundamentally constrained by candidate
+coverage. Once answer-supporting evidence is absent from the retrieved pool,
+downstream reranking or selection can only reorder inadequate candidates. A
+reliable system must therefore decide not only which evidence to use, but also
+whether the current pool is sufficient, which partial evidence should persist,
+and when retrieval should be redirected.
+
+This problem is acute in multimodal endoscopy. Different pathologies or
+anatomical sites can appear similar, while question text may provide weak
+retrieval cues~\cite{li2023llavamed,liu2025endobench}. Fixed fusion can
+overweight an uninformative modality, and unrestricted retrieval can return
+visually plausible but anatomically incompatible evidence. Rewriting may
+improve coverage, but a failed rewrite can shift retrieval to another poor
+neighborhood. Reranking cannot recover absent evidence, while discarding prior
+failures removes clues for avoiding the same direction. Such reliability
+matters in medical RAG, where technical development still outpaces systematic
+clinical validation~\cite{yang2026medicalrag}.
+
+Figure~\ref{fig:motivation} motivates the distinction between myopic and
+stateful retrieval control. A memoryless controller reformulates only
+from the current round and may revisit a previously explored, misleading
+retrieval neighborhood. A stateful controller can instead retain useful
+partial evidence and failed retrieval traces. The former can accumulate as
+answer-supporting context; the latter can inform subsequent reformulation
+without contaminating the final generation context.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig1_motivation_submission.png}
+  \caption{Design motivation for myopic versus stateful retrieval control. A memoryless
+  controller can repeatedly explore the same misleading neighborhood.
+  AgenticRL maintains retained evidence $M_t^+$ as generation-visible context
+  and failed retrieval traces $M_t^-$ as controller-only history for subsequent
+  reformulation.}
+  \label{fig:motivation}
+\end{figure*}
+
+Recent work studies RL for multi-round search, retriever-aware rewriting, and
+multimodal RAG~\cite{jin2025searchr1,song2025r1searcher,li2026ttr,
+lin2026craf,zhao2026mmragrft}. These controllers reformulate from the current
+round only, so what a round has established is lost once the next query is
+issued. We instead train one smaller policy to manage evidence persistence and
+further search under a fixed budget over a frozen multimodal stack. Failed
+traces remain available for control but hidden from answer generation.
+
+We present \textbf{AgenticRL}, a closed-loop framework for controlling this
+frozen environment. The retrieval front end uses anatomical semantic
+partitioning and optionally applies query-dependent modality weighting before
+retrieving multimodal candidates. A base controller selects evidence and
+chooses \textsc{Accept} or \textsc{Rewrite}. The complete inference strategy
+wraps this controller in a fixed three-round refinement process. Its
+generation-visible state $M_t^+$ stores the latest non-empty retained set,
+whereas previous queries and failed candidate traces form the controller-only
+state $M_t^-$. An initial \textsc{Rewrite} deterministically initializes
+$M^+$ with the three highest-ranked candidates; subsequent non-empty
+\textsc{Keep} selections replace the current best evidence state.
+
+Both actions use a shared generator-derived utility. \textsc{Accept} scores
+retained evidence; \textsc{Rewrite} first executes the complete frozen
+retrieval path and then scores its returned evidence. This penalizes fluent
+rewrites that fail against the deployed index. An SFT--RFT--GRPO curriculum
+optimizes only the controller.
+
+We evaluate on EndoBench~\cite{liu2025endobench}, which contains $6{,}832$ VQA
+pairs across four endoscopic scenarios and 12 clinical tasks. Under a shared
+frozen stack, we compare one-shot RAG, single-round control, memoryless
+iterative control, and memory-aware control, and we isolate the state itself
+by a protocol-matched ablation and by separating questions on which memory
+becomes active from those on which it never does. The results show that within
+budgeted execution it is cross-round state, not iteration, that makes iterative
+retrieval pay off: memoryless iteration is no better than a single round
+(39.56\% vs.\ 40.12\%), whereas AgenticRL reaches 42.84\%, i.e.\ $+3.28$
+points over memoryless iterative control (exact McNemar $p<10^{-12}$) and
+$+2.72$ over single-round control, with the gain concentrated exactly where the
+state is used. A 4B controller with a frozen 8B generator thereby surpasses the
+41.69\% GPT-4o accuracy that EndoBench reports by 1.15 points, and also exceeds
+its 34B and 80B medical-specialist models; those systems answer without
+retrieval, so the comparison is contextual, but it shows that state-carrying
+retrieval control reaches this accuracy band more cheaply than model scale.
+
+Our contributions are:
+\begin{itemize}
+  \item We formulate frozen-stack multimodal RAG as budgeted closed-loop
+  control, where one policy jointly selects candidate evidence, updates a
+  current best evidence state, and redirects the deployed retriever when
+  information remains missing.
+  \item We introduce trajectory-aware retrieval memory that separates
+  generation-visible retained evidence $M^+$ from controller-only failed
+  retrieval traces $M^-$, together with the deterministic budgeted wrapper that
+  makes retained evidence reusable across rounds. This lets the latest useful
+  evidence persist while refuted retrieval directions inform later
+  reformulation without ever entering the answer context.
+  \item We place heterogeneous \textsc{Accept} and \textsc{Rewrite} actions on
+  a shared generator-derived scale after executing their actual retrieval
+  consequences, and optimize the controller with an SFT--RFT--GRPO curriculum
+  without updating the retrieval environment or generator.
+  \item On the full EndoBench benchmark we show that, under a fixed budget,
+  cross-round state rather than iteration is what makes repeated retrieval pay
+  off: memoryless iterative control does not improve over a single round,
+  whereas the complete evidence-preserving strategy adds $3.28$ points over it
+  ($p<10^{-12}$) and $2.72$ points over single-round control, exceeds the
+  benchmark-reported GPT-4o accuracy with a 4B controller, and produces no
+  change on the questions where the state never activates. Matched diagnostics
+  further delimit how much of this gain the state itself carries.
+\end{itemize}

@@ -1,0 +1,46 @@
+{
+  "architecture_version": "v0.4-agent-controller",
+  "project_root": "..",
+  "paths": {
+    "main_db_path": "/mnt/data_1/yds/多模态/data_house/multimodal_samples.db",
+    "multimodal_search_dir": "/mnt/data_1/yds/多模态/retrieval/多模态",
+    "qa_gold_path": "outputs/qa_stage1_verified/qa_gold.jsonl",
+    "output_dir": "outputs/runtime"
+  },
+  "retrieval": {
+    "milvus_db_path": "/mnt/data_1/yds/多模态/data_house/milvus/multimodal_vector_indexes.db",
+    "text_model_path": "/mnt/data_1/yds/RAG/Hybrid_milvus/总版/pretrained_models/BAAI/bge-m3",
+    "image_model_path": "/mnt/data_10/mwx/huggingface_cache/hub/models--Qwen--Qwen3-VL-8B-Instruct/snapshots/0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "text_device": "auto",
+    "image_device": "cuda",
+    "image_torch_dtype": "auto",
+    "nprobe": 64,
+    "first_stage_text_k": 20,
+    "first_stage_image_k": 20
+  },
+  "routing": {
+    "enabled": false,
+    "status": "not_wired",
+    "router_checkpoint": "checkpoints/router_mengzi_bert",
+    "density_levels": ["L0", "L1", "L2", "L3", "L4"],
+    "image_dependency_levels": ["R1", "R2", "R3"]
+  },
+  "generator": {
+    "base_url": "http://127.0.0.1:8888/v1",
+    "api_key": "EMPTY",
+    "model": "/mnt/data_10/mwx/huggingface_cache/hub/models--Qwen--Qwen3-VL-8B-Instruct/snapshots/0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "max_tokens": 512,
+    "timeout": 120,
+    "logprobs": true,
+    "top_logprobs": 5
+  },
+  "agent": {
+    "policy_model": "Qwen3.5-4B",
+    "max_rounds": 2,
+    "max_evidence_images": 20,
+    "keep_drop_threshold": 0.0,
+    "accept_threshold": 0.6
+  }
+}

@@ -1,0 +1,57 @@
+paths:
+  input_root: /mnt/data_1/yds/RAG/Hybrid_milvus/总版/all_data/insert_data
+  stats_out_dir: /mnt/data_1/yds/RAG/Hybrid_milvus/总版/all_data/stats_v2
+  stopwords_zh: /mnt/data_1/yds/RAG/Hybrid_milvus/总版/all_data/word_txt/stopwords_zh.txt
+  stopwords_en: /mnt/data_1/yds/RAG/Hybrid_milvus/总版/all_data/word_txt/stopwords_en.txt
+  model_path: /mnt/data_1/yds/RAG/Hybrid_milvus/总版/pretrained_models/BAAI/bge-m3
+  jieba_userdict: /mnt/data_1/yds/RAG/Hybrid_milvus/总版/all_data/word_txt/vocab_final_zh.txt
+  bm25_vocab: /mnt/data_1/yds/RAG/Hybrid_milvus/总版/all_data/word_txt/vocab_BM25.txt
+  vocab_path: /mnt/data_1/yds/RAG/Hybrid_milvus/总版/all_data/word_txt/vocab_BM25.txt
+bm25:
+  k1: 1.2
+  b: 0.75
+  idf_clip_min: 0.0
+  min_df: 1
+  max_terms_per_doc: 4000
+  forbid_single_char: true
+milvus:
+  uri: /mnt/data_1/yds/RAG/Hybrid_milvus/总版/数据库/bm25.db
+  user: ''
+  password: ''
+  db_name: default
+  collection: cervix_v3
+  alias: cervix
+  dims_dense: 1024
+  max_text_len: 4096
+  max_summary_len: 1024
+  partitions: []
+  index_dense:
+    type: IVF_FLAT
+    metric: IP
+    params:
+      nlist: 8192
+    search_params:
+      nprobe: 32
+  index_sparse:
+    type: SPARSE_INVERTED_INDEX
+    metric: IP
+    params: {}
+insert:
+  batch_size: 512
+  flush_interval_batches: 50
+  max_workers: 2
+  retry_times: 3
+  checkpoint_dir: /mnt/data_1/yds/RAG/Hybrid_milvus/总版/all_data/checkpoints_v2
+  audit_log: true
+retrieval:
+  topk: 20
+  fusion:
+    normalize:
+      dense: none
+      sparse: zscore
+    weights:
+      dense: 0.6
+      sparse: 0.4
+    lang_adapt:
+      zh_sparse: 0.4
+      en_sparse: 0.4

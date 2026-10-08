@@ -1,0 +1,6 @@
+index,category,task,subtask,scene,dataset,answer,pred,status,error_type,error_message
+0,Anatomical Structure Recognition,Organ Identification,Organ Identification,Capsule Endoscopy,Kid,B,C,ok,,
+1,Anatomical Structure Recognition,Organ Identification,Organ Identification,Capsule Endoscopy,Kid,A,D,ok,,
+2,Anatomical Structure Recognition,Organ Identification,Organ Identification,Capsule Endoscopy,Kid,D,B,ok,,
+3,Anatomical Structure Recognition,Organ Identification,Organ Identification,Capsule Endoscopy,Kid,A,D,ok,,
+4,Anatomical Structure Recognition,Organ Identification,Organ Identification,Capsule Endoscopy,Kid,A,B,ok,,

@@ -1,0 +1,301 @@
+# 多模态向量库构建与检索说明
+
+## 1. 当前状态
+
+当前这套多模态向量库已经构建完成。
+
+- 完成时间：`2026-03-23 06:53:45`
+- 完成依据：[`run_resume_image_daemon.log`](/mnt/data_1/yds/多模态/data_house/milvus/run_resume_image_daemon.log) 中最后一行
+- 最终状态：`resume_job_finished status=0 embedded=66291/66291`
+
+本次构建结果包含两个物理向量库：
+
+- `text_vector_index`
+- `image_vector_index`
+
+检索脚本当前状态（更新时间：`2026-03-23`）：
+
+- 双库检索脚本已实现：[`search_multimodal_vector_store.py`](/mnt/data_1/yds/多模态/retrieval/多模态/search_multimodal_vector_store.py)
+- 已完成真实数据验证：文本检索、图片检索、`level1/level2` 过滤、离线 `jsonl -> jsonl` 均通过
+- 环境注意：当前 `endo` 环境里 `milvus_lite` 依赖 `pkg_resources`，若缺失会导致本地 Milvus 连接失败，需要补齐运行环境后再直接运行
+
+## 2. 主数据库与向量库路径
+
+主数据库路径：
+
+- [`multimodal_samples.db`](/mnt/data_1/yds/多模态/data_house/multimodal_samples.db)
+
+Milvus Lite 向量库路径：
+
+- [`multimodal_vector_indexes.db`](/mnt/data_1/yds/多模态/data_house/milvus/multimodal_vector_indexes.db)
+
+测试用 smoke 库路径：
+
+- [`multimodal_vector_indexes_smoke.db`](/mnt/data_1/yds/多模态/data_house/milvus/multimodal_vector_indexes_smoke.db)
+
+## 3. 当前使用的嵌入模型
+
+文本嵌入模型：
+
+- 模型：`BAAI/bge-m3`
+- 本地路径：`/mnt/data_1/yds/RAG/Hybrid_milvus/总版/pretrained_models/BAAI/bge-m3`
+- 用途：构建 `text_vector_index`
+- 向量维度：`1024`
+
+图片嵌入模型：
+
+- 模型：`Qwen3-VL-8B-Instruct`
+- 本地路径：`/mnt/data_10/mwx/huggingface_cache/hub/models--Qwen--Qwen3-VL-8B-Instruct/snapshots/0c351dd01ed87e9c1b53cbc748cba10e6187ff3b`
+- 用途：构建 `image_vector_index`
+- 使用方式：只使用视觉编码器路径，不走 decoder / lm_head
+- 向量维度：`4096`
+
+## 4. 当前脚本位置
+
+核心脚本：
+
+- [`build_multimodal_milvus.py`](/mnt/data_1/yds/多模态/retrieval/多模态/build_multimodal_milvus.py)
+
+辅助模块：
+
+- [`text_dense_module.py`](/mnt/data_1/yds/多模态/retrieval/多模态/text_dense_module.py)
+- [`image_dense_module.py`](/mnt/data_1/yds/多模态/retrieval/多模态/image_dense_module.py)
+- [`common.py`](/mnt/data_1/yds/多模态/retrieval/多模态/common.py)
+
+## 5. 向量库内容
+
+文本库：
+
+- collection 名称：`text_vector_index`
+- 数据来源：
+  - `text_only`
+  - `image_text_pair`
+- 当前完成数量：`230004`
+
+图片库：
+
+- collection 名称：`image_vector_index`
+- 数据来源：`multimodal_samples.images`
+- 当前完成数量：`66291`
+
+## 6. 关键映射字段
+
+文本向量记录中保留：
+
+- `id = sample_id`
+- `sample_id`
+- `group_id`
+- `image_ids`
+
+图片向量记录中保留：
+
+- `id = image_id`
+- `image_id`
+- `parent_sample_id`
+- `group_id`
+- `image_path`
+
+因此支持以下映射：
+
+- 图片向量 -> 原始图片：通过 `image_path`
+- 图片向量 -> 文本向量：通过 `parent_sample_id -> sample_id`
+- 文本向量 -> 图片向量：通过 `image_ids -> image_id`
+
+## 7. 本次构建过程补充
+
+本次图片库构建中途发生过多次中断，因此采用了“临时 shard + 后台常驻恢复”的方式完成。
+
+恢复相关目录与脚本：
+
+- 临时图片 shard 目录：
+  [`image_parallel_sd5aqpxe`](/mnt/data_1/yds/多模态/data_house/milvus/image_parallel_sd5aqpxe)
+- 常驻恢复脚本：
+  [`run_resume_image_daemon.sh`](/mnt/data_1/yds/多模态/data_house/milvus/run_resume_image_daemon.sh)
+- 常驻恢复日志：
+  [`run_resume_image_daemon.log`](/mnt/data_1/yds/多模态/data_house/milvus/run_resume_image_daemon.log)
+
+## 8. 当前结论
+
+截至当前：
+
+- 文本向量库已完成
+- 图片向量库已完成
+- 主向量库文件已落盘到：
+  [`multimodal_vector_indexes.db`](/mnt/data_1/yds/多模态/data_house/milvus/multimodal_vector_indexes.db)
+
+后续如果继续做检索或评测，默认应基于这套库进行，而不是重新从零建库。
+
+## 9. 双库检索脚本
+
+已提供双库检索脚本：
+
+- [`search_multimodal_vector_store.py`](/mnt/data_1/yds/多模态/retrieval/多模态/search_multimodal_vector_store.py)
+
+### 9.1 检索模式
+
+当前实现按以下策略执行：
+
+- `1C`：文本库、图片库独立检索
+- `2B`：新输出接口（显式返回请求条件、过滤条件、命中内容、相似度）
+- `3A`：按 `sample_id` 去重
+- `4C`：同时支持在线检索与离线批量检索
+
+### 9.2 向量逻辑对齐说明（关键）
+
+检索时严格复用建库 embedding 逻辑：
+
+- 文本库检索：复用 `text_dense_module.embed_texts(...)`（BGE-M3, normalize）
+- 图片库检索：复用 `image_dense_module.embed_images(...)`（Qwen3-VL `get_image_features` + mean pooling + normalize）
+
+因此检索向量空间与建库向量空间保持一致，避免 embedding 不一致导致相似度失真。
+
+### 9.3 请求入参（业务字段）
+
+检索请求字段定义：
+
+| 字段 | 类型 | 含义 | 备注 |
+|---|---|---|---|
+| `Q` | `str` | 查询内容 | 文本库时为查询文本；图片库时为查询图片路径 |
+| `k` | `int` | 返回前 `k` 条结果 | `k > 0` |
+| `level1` | `str` | 一级视图过滤 | 映射字段 `body_site_main`；空字符串表示不过滤 |
+| `level2` | `str` | 二级分类过滤 | 映射字段 `knowledge_type_main`；空字符串表示不过滤 |
+| `retrieval_db` | `str` | 检索库类型 | `text` 对应 `text_vector_index`；`image` 对应 `image_vector_index` |
+
+### 9.4 Python API（函数入参/出参）
+
+主要对象：
+
+- `SearchConfig`
+- `RetrievalRequest`
+
+主要函数：
+
+```python
+request_from_payload(payload: dict) -> RetrievalRequest
+MultimodalVectorSearchEngine.search(request: RetrievalRequest) -> dict
+MultimodalVectorSearchEngine.batch_search(requests: list[RetrievalRequest]) -> list[dict]
+MultimodalVectorSearchEngine.run_offline_jsonl(input_jsonl: str, output_jsonl: str) -> int
+```
+
+函数入参/出参说明：
+
+| 函数 | 传入参数 | 传出参数 |
+|---|---|---|
+| `request_from_payload` | `payload`：原始请求字典（支持 `Q/q/query`、`k/topk` 等别名） | `RetrievalRequest` 标准请求对象 |
+| `search` | `request`：单条标准请求 | `dict`，包含 `request`、`applied_conditions`、`results`、`hit_count` |
+| `batch_search` | `requests`：多条标准请求列表 | `list[dict]`，每条对应一条请求结果；失败条目带 `error` |
+| `run_offline_jsonl` | `input_jsonl`：输入路径；`output_jsonl`：输出路径 | `int`，已处理条数 |
+
+### 9.5 输出字段定义
+
+`search(...)` 输出结构：
+
+| 字段 | 说明 |
+|---|---|
+| `request` | 标准化后的请求参数 |
+| `applied_conditions.level1_field` | 固定为 `body_site_main` |
+| `applied_conditions.level2_field` | 固定为 `knowledge_type_main` |
+| `applied_conditions.level1` | 实际使用的一级过滤值 |
+| `applied_conditions.level2` | 实际使用的二级过滤值 |
+| `applied_conditions.expr` | 传入 Milvus 的过滤表达式 |
+| `applied_conditions.dedup_key` | 当前为 `sample_id` |
+| `applied_conditions.nprobe` | 检索参数 |
+| `results` | 命中结果数组 |
+| `hit_count` | 返回结果条数 |
+
+`results` 中每条记录至少包含：
+
+| 字段 | 说明 |
+|---|---|
+| `rank` | 名次（从 1 开始） |
+| `score` | 最终相似度分数（IP） |
+| `retrieval_db` | 来源库（`text` 或 `image`） |
+| `sample_id` / `group_id` | 样本标识 |
+| `doc_id` / `doc_name` / `page_idx` | 文档定位信息 |
+| `level1` / `level2` | 命中记录的分类字段值 |
+| `content` | 供下游 RAG 使用的文本内容 |
+
+文本库结果额外字段：
+
+- `block_id`、`text_role`、`image_ids`、`source_type`
+
+图片库结果额外字段：
+
+- `image_id`、`image_path`、`image_type`、`is_primary`
+
+### 9.6 命令行参数（CLI）
+
+核心参数：
+
+- `--retrieval-db {text,image}`
+- `--q`
+- `--k`
+- `--level1`
+- `--level2`
+- `--nprobe`
+
+离线模式参数：
+
+- `--input-jsonl`
+- `--output-jsonl`
+
+通用模型与路径参数：
+
+- `--milvus-db-path`
+- `--main-db-path`
+- `--text-model-path`
+- `--image-model-path`
+- `--text-device`
+- `--image-device`
+- `--image-torch-dtype`
+
+### 9.7 单条检索示例
+
+文本库检索：
+
+```bash
+python3 /mnt/data_1/yds/多模态/retrieval/多模态/search_multimodal_vector_store.py \
+  --retrieval-db text \
+  --q "胃ESD后穿孔如何判断" \
+  --k 5 \
+  --level1 食管 \
+  --level2 诊断 \
+  --pretty
+```
+
+图片库检索（`Q` 为图片路径）：
+
+```bash
+python3 /mnt/data_1/yds/多模态/retrieval/多模态/search_multimodal_vector_store.py \
+  --retrieval-db image \
+  --q /path/to/query_image.jpg \
+  --k 5 \
+  --level1 食管 \
+  --level2 诊断 \
+  --pretty
+```
+
+### 9.8 离线 JSONL 检索示例
+
+输入 JSONL 每行可包含：
+
+```json
+{"Q": "胃ESD后穿孔如何判断", "k": 5, "level1": "食管", "level2": "诊断", "retrieval_db": "text"}
+```
+
+执行：
+
+```bash
+python3 /mnt/data_1/yds/多模态/retrieval/多模态/search_multimodal_vector_store.py \
+  --input-jsonl /path/to/requests.jsonl \
+  --output-jsonl /path/to/results.jsonl
+```
+
+### 9.9 验证结论（当前）
+
+已完成的验证项：
+
+- 文本检索：可返回语义相关文段，分数与排序正常
+- 图片检索：可返回语义相关图片，并补全父样本文本信息
+- 条件过滤：`level1/level2` 过滤表达式正确生效
+- 离线批量：输入输出 JSONL 可稳定产出

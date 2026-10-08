@@ -1,0 +1,39 @@
+# config_sev_qwen25_listwise.yaml
+# Purpose: SEV/Reranker inference config for cache generation (top100/top1000)
+# NOTE: Keep these fields stable to ensure score distribution reproducibility.
+
+sev_model:
+  # Base backbone
+  base_model_path: "/mnt/data_1/yds/微调/models/Qwen2.5-7B-Instruct"
+  trust_remote_code: true
+
+  # LoRA adapter
+  lora_adapter_path: "/mnt/data_1/yds/微调/分类模型微调/数据集构造_new/微调BGE/训练/listwise微调/save_weights_ddp"
+
+  # Heads
+  score_head_path: "/mnt/data_1/yds/微调/分类模型微调/数据集构造_new/微调BGE/训练/listwise微调/save_weights_ddp/rank_score_head.pt"
+  cls_head_path: "/mnt/data_1/yds/微调/分类模型微调/数据集构造_new/微调BGE/训练/listwise微调/save_weights_ddp/rank_cls_head.pt"
+
+tokenizer:
+  padding_side: "right"
+  # 如果 tokenizer 没有 pad_token，强制用 eos 代替（避免 batch padding 不一致）
+  force_pad_token_to_eos: true
+
+inference:
+  device: "cuda"
+  dtype: "bf16"             # 建议固定；如果你机器不支持 bf16 再改成 fp16
+  batch_size: 8             # 先保守，避免 top1000 OOM；你可按显存再调大
+  max_length: 2048          # 必须固定；太大容易慢/爆显存，太小会截断证据
+  truncation: true
+  use_amp: true             # bf16/fp16 自动混合（如果你代码里支持）
+  num_workers: 2
+  pin_memory: true
+
+prompt:
+  # 你之前用过的模板：保持一致，别改
+  template: "文段是否支持回答问题：{question}\n文段如下：{passage}"
+
+# Optional: quick sanity paths (not required by scripts, but helps audit)
+audit:
+  test_json_example: "/mnt/data_1/yds/微调/分类模型微调/数据集构造_new/微调BGE/数据集/测试.json"
+

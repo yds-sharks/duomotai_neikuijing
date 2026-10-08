@@ -1,0 +1,55 @@
+# ===== Python 运行产物 =====
+__pycache__/
+*.py[cod]
+.venv/
+
+# ===== 数据库 / 模型权重（体积过大，保留原位或本地，不入库） =====
+*.db
+*.db.lock
+*.safetensors
+*.pth
+*.bin
+checkpoints/
+ckpt_*/
+
+# ===== 实验输出与结果目录（本地保留，不入库） =====
+output*/
+outputs*/
+results*/
+logs/
+log/
+endobench_images/
+ablation_200/
+verify_10/
+smoke*/
+eval_ctrl/
+eval_rft/
+data/
+最终结果/
+人工审核/
+manual_review_real_queries_20260428/
+
+# ===== 大文件格式（数据/日志/压缩包/中间产物） =====
+*.log
+*.jsonl
+*.tar
+*.tar.gz
+*.zip
+*.pkl
+*.npy
+
+# ===== 含嵌套 .git 的 legacy A 树（历史在 GitHub yds-sharks/agentic，本地副本仅供追溯） =====
+09_legacy_deprecated/agentic_toplevel/
+
+# ===== 参考文献PDF（第三方版权，仅本地保留） =====
+**/papers/
+
+# ===== 第三方模板检查与解压数据 =====
+_inspect_*/
+YpathRAG_unzipped/
+
+# ===== 敏感配置（本地API密钥） =====
+api_config.local.json
+
+# ===== 第三方工具（仅本地保留） =====
+third_party/

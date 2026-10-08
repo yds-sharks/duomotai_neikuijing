@@ -1,0 +1,283 @@
+{
+  "avg_metrics": {
+    "MRR@1": 0.6005,
+    "NDCG@1": 0.4815,
+    "NDCG@3": 0.5814,
+    "NDCG@5": 0.6065,
+    "Recall@1": 0.4815,
+    "Recall@3": 0.6667,
+    "Recall@5": 0.7407
+  },
+  "detail": [
+    {
+      "question": "在研究中，胎盘植入的严重程度是如何评估的？",
+      "MRR@1": 0.5,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.6934264036172708,
+      "NDCG@5": 0.6934264036172708,
+      "Recall@1": false,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "How does the performance of the Aptima high-risk human papillomavirus mRNA assay compare with Hybrid Capture 2 and cytology in a referral population?",
+      "MRR@1": 0.09090909090909091,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.0,
+      "NDCG@5": 0.0,
+      "Recall@1": false,
+      "Recall@3": false,
+      "Recall@5": false
+    },
+    {
+      "question": "What is the prognostic value of tumor budding in early-stage cervical adenocarcinomas?",
+      "MRR@1": 0.043478260869565216,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.0,
+      "NDCG@5": 0.0,
+      "Recall@1": false,
+      "Recall@3": false,
+      "Recall@5": false
+    },
+    {
+      "question": "如何通过改进YOLO v5网络提高宫颈异常细胞检测的精度和抗噪能力？",
+      "MRR@1": 0.08333333333333333,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.0,
+      "NDCG@5": 0.0,
+      "Recall@1": false,
+      "Recall@3": false,
+      "Recall@5": false
+    },
+    {
+      "question": "MRI在宫颈癌分期中的准确性如何体现？",
+      "MRR@1": 0.16666666666666666,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.0,
+      "NDCG@5": 0.0,
+      "Recall@1": false,
+      "Recall@3": false,
+      "Recall@5": false
+    },
+    {
+      "question": "如何通过体位改变来减少心肌灌注显像中的衰减效应？",
+      "MRR@1": 1.0,
+      "NDCG@1": 1.0,
+      "NDCG@3": 1.0,
+      "NDCG@5": 1.0,
+      "Recall@1": true,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "What are the implications of HPV-based cervical-cancer screening in China as discussed in the literature?",
+      "MRR@1": 1.0,
+      "NDCG@1": 1.0,
+      "NDCG@3": 1.0,
+      "NDCG@5": 1.0,
+      "Recall@1": true,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "婴儿期与成人相比，胸膜腔负压有何不同？",
+      "MRR@1": 1.0,
+      "NDCG@1": 1.0,
+      "NDCG@3": 1.0,
+      "NDCG@5": 1.0,
+      "Recall@1": true,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "炭疽杆菌的A-B毒素中，A组分和B组分的具体功能是什么？",
+      "MRR@1": 1.0,
+      "NDCG@1": 1.0,
+      "NDCG@3": 0.9197207891481876,
+      "NDCG@5": 0.9197207891481876,
+      "Recall@1": true,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "HR-HPV感染与宫颈癌及癌前病变之间的关系是什么？",
+      "MRR@1": 1.0,
+      "NDCG@1": 1.0,
+      "NDCG@3": 0.9197207891481876,
+      "NDCG@5": 0.8854598815714874,
+      "Recall@1": true,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "激肽系统如何与RAS系统相互作用影响血管舒缩？",
+      "MRR@1": 1.0,
+      "NDCG@1": 1.0,
+      "NDCG@3": 1.0,
+      "NDCG@5": 1.0,
+      "Recall@1": true,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "脂肪瘤在CT和MRI检查中有哪些典型影像学表现？",
+      "MRR@1": 1.0,
+      "NDCG@1": 1.0,
+      "NDCG@3": 1.0,
+      "NDCG@5": 1.0,
+      "Recall@1": true,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "What role does lymphovascular invasion play in pattern C invasive endocervical adenocarcinoma?",
+      "MRR@1": 0.03571428571428571,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.0,
+      "NDCG@5": 0.0,
+      "Recall@1": false,
+      "Recall@3": false,
+      "Recall@5": false
+    },
+    {
+      "question": "如何通过两点辨别觉检查来判断额叶病变？",
+      "MRR@1": 0.07692307692307693,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.0,
+      "NDCG@5": 0.0,
+      "Recall@1": false,
+      "Recall@3": false,
+      "Recall@5": false
+    },
+    {
+      "question": "CIN Ⅰ级与CIN Ⅲ级在发展为浸润癌的概率上有何差异？",
+      "MRR@1": 0.5,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.6309297535714575,
+      "NDCG@5": 0.6309297535714575,
+      "Recall@1": false,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "肠易激综合征（IBS）患者在排便后通常会有什么变化？",
+      "MRR@1": 1.0,
+      "NDCG@1": 1.0,
+      "NDCG@3": 1.0,
+      "NDCG@5": 0.8772153153380493,
+      "Recall@1": true,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "HPV感染的基因型中，最常见的前五位分别是什么？",
+      "MRR@1": 0.5,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.6934264036172708,
+      "NDCG@5": 0.7122630665145961,
+      "Recall@1": false,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "在不同级别宫颈病变中，HR-HPV感染的比例有何变化？",
+      "MRR@1": 1.0,
+      "NDCG@1": 1.0,
+      "NDCG@3": 1.0,
+      "NDCG@5": 1.0,
+      "Recall@1": true,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "在外部验证中，哪种模型的阴性预测值最高？",
+      "MRR@1": 0.3333333333333333,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.5,
+      "NDCG@5": 0.5,
+      "Recall@1": false,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "在心绞痛的发作性治疗中，硝酸甘油的使用方法和注意事项是什么？",
+      "MRR@1": 0.25,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.0,
+      "NDCG@5": 0.43067655807339306,
+      "Recall@1": false,
+      "Recall@3": false,
+      "Recall@5": true
+    },
+    {
+      "question": "再生障碍性贫血（AA）患者在支持治疗中应采取哪些预防措施？",
+      "MRR@1": 1.0,
+      "NDCG@1": 1.0,
+      "NDCG@3": 0.9197207891481876,
+      "NDCG@5": 0.9197207891481876,
+      "Recall@1": true,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "哪些菌属与BV和HPV感染呈正相关，并被认为是感染的危险因素？",
+      "MRR@1": 1.0,
+      "NDCG@1": 1.0,
+      "NDCG@3": 1.0,
+      "NDCG@5": 1.0,
+      "Recall@1": true,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "绝经后妇女中，宫颈高危HPV感染者的阴道镜检查异常检出率是多少？",
+      "MRR@1": 0.3333333333333333,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.5,
+      "NDCG@5": 0.5,
+      "Recall@1": false,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "在QQ vs CK组的GO注释统计图中，GO功能注释被分为哪几类？",
+      "MRR@1": 0.1,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.0,
+      "NDCG@5": 0.0,
+      "Recall@1": false,
+      "Recall@3": false,
+      "Recall@5": false
+    },
+    {
+      "question": "端粒酶激活在宫颈癌发生发展中的作用是什么？",
+      "MRR@1": 0.2,
+      "NDCG@1": 0.0,
+      "NDCG@3": 0.0,
+      "NDCG@5": 0.38685280723454163,
+      "Recall@1": false,
+      "Recall@3": false,
+      "Recall@5": true
+    },
+    {
+      "question": "在诊断成人大关节完全性脱位时，CT或MRI检查有哪些重要作用？",
+      "MRR@1": 1.0,
+      "NDCG@1": 1.0,
+      "NDCG@3": 0.9197207891481876,
+      "NDCG@5": 0.9197207891481876,
+      "Recall@1": true,
+      "Recall@3": true,
+      "Recall@5": true
+    },
+    {
+      "question": "哪些肿瘤类型可能导致低血糖症？",
+      "MRR@1": 1.0,
+      "NDCG@1": 1.0,
+      "NDCG@3": 1.0,
+      "NDCG@5": 1.0,
+      "Recall@1": true,
+      "Recall@3": true,
+      "Recall@5": true
+    }
+  ]
+}

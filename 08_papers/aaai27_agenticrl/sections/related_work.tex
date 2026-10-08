@@ -1,0 +1,72 @@
+\section{Related Work}
+\label{sec:related_work}
+
+\paragraph{Agentic retrieval and query reformulation.}
+Retrieval-augmented generation grounds model outputs in external
+evidence~\cite{lewis2020retrieval}. Beyond fixed retrieve--generate pipelines,
+Self-RAG learns to retrieve and critique evidence through
+self-reflection~\cite{asai2024selfrag}, while Iter-RetGen alternates retrieval
+and generation so that intermediate reasoning can guide subsequent
+retrieval~\cite{shao2023iterretgen}. Search-R1 and R1-Searcher further use
+reinforcement learning to train language models to issue search actions during
+reasoning~\cite{jin2025searchr1,song2025r1searcher}. A related line focuses on
+retriever-aware query reformulation. TTR generates reasoning-enhanced rewrites
+for domain-specific retrievers~\cite{li2026ttr}, whereas CRAF recovers latent
+diagnostic intent for clinical similar-case retrieval through reinforcement
+learning~\cite{lin2026craf}. Together, these studies establish retrieval as a
+sequential decision process rather than a single preprocessing step, yet their
+controllers condition on the current round alone, so evidence and negative
+outcomes accumulated so far are not carried forward. Our setting extends this
+view from search or rewriting alone to state-carrying control that jointly
+performs candidate selection and round-level decisions: one policy chooses which
+evidence to retain, updates a current best evidence state, and either preserves
+the current pool or redirects retrieval under a fixed budget. Retained evidence
+and failed retrieval traces are represented separately so that only
+answer-supporting context is exposed to the generator.
+
+\paragraph{Multimodal and medical retrieval adaptation.}
+Multimodal RAG extends external grounding beyond text. MuRAG retrieves from
+image and text collections for knowledge-intensive visual question
+answering~\cite{chen2022murag}; retrieval-augmented multimodal language modeling
+incorporates retrieved multimodal demonstrations into generation
+~\cite{yasunaga2023retrieval}; and GeMKR generates multimodal knowledge clues
+before database retrieval~\cite{long2024gemkr}. More recent systems integrate
+retrieval with model optimization: MMRAG-RFT applies reinforcement fine-tuning
+to multimodal document filtering, ranking, and answer
+generation~\cite{zhao2026mmragrft}, while URaG unifies page retrieval and
+generation within a multimodal model~\cite{shi2026urag}. These works demonstrate
+the complementarity of visual and textual evidence, but their discriminative
+retrieval value can vary by query. We therefore treat query-dependent modality
+allocation as adaptation of the fixed retrieval environment, rather than as
+the central policy contribution.
+
+Medical multimodal reasoning introduces additional domain constraints.
+Biomedical vision-language pretraining and instruction tuning improve medical
+knowledge and instruction following~\cite{li2023llavamed}, while EndoBench
+documents substantial variation in endoscopic reasoning across clinical tasks,
+scenarios, and visual prompting granularities~\cite{liu2025endobench}. CMID
+further shows that medically relevant visual evidence can be obscured by
+textual priors or irrelevant image regions~\cite{zhu2026cmid}. These works
+motivate domain adaptation but are not themselves anatomical retrieval
+methods. In endoscopic retrieval, findings from different gastrointestinal
+sites may appear visually or linguistically similar while requiring different
+supporting evidence. We accordingly use anatomical semantic partitioning as a
+fixed medical prior in the retrieval environment and evaluate it separately
+from controller learning.
+
+\paragraph{Positioning of AgenticRL.}
+AgenticRL lies at the intersection of agentic search, retriever-aware
+reformulation, multimodal RAG, and medical-domain adaptation, but targets a
+distinct frozen-stack control problem. During controller optimization, the
+retrievers, deployed index, enabled routing modules, and generator remain
+fixed. At each round, the controller jointly produces
+candidate-level \textsc{Keep}/\textsc{Drop} decisions and a round-level
+\textsc{Accept}/\textsc{Rewrite} action. Retained partial evidence $M_t^+$
+is maintained as a current best evidence state for later rounds and the final
+generator, whereas failed
+retrieval traces $M_t^-$ are controller-only state used to inform subsequent
+reformulation. Moreover, a rewrite is evaluated only after it has traversed
+the deployed retrieval path, placing \textsc{Accept} and \textsc{Rewrite} on a
+shared generator-derived utility scale. Experimentally, we compare memory-aware
+control with one-shot, single-round, and memoryless iterative alternatives on
+the same frozen stack, and isolate the contribution of cross-round state itself.

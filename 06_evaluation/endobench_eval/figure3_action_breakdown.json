@@ -1,0 +1,54 @@
+{
+  "B": 10000,
+  "seed": 20260729,
+  "groups": {
+    "ACCEPT": {
+      "n": 3187,
+      "single_correct": 1291,
+      "single_wrong": 1896,
+      "correct_to_correct": 1201,
+      "correct_to_wrong": 90,
+      "wrong_to_correct": 83,
+      "wrong_to_wrong": 1813
+    },
+    "REWRITE": {
+      "n": 3645,
+      "single_correct": 1450,
+      "single_wrong": 2195,
+      "correct_to_correct": 1290,
+      "correct_to_wrong": 160,
+      "wrong_to_correct": 353,
+      "wrong_to_wrong": 1842
+    }
+  },
+  "rates": {
+    "ACCEPT_correction_rate": {
+      "estimate": 0.04377637130801688,
+      "ci_low": 0.03533755274261603,
+      "ci_high": 0.052742616033755275,
+      "numerator": 83,
+      "denominator": 1896
+    },
+    "ACCEPT_regression_rate": {
+      "estimate": 0.069713400464756,
+      "ci_low": 0.056545313710302095,
+      "ci_high": 0.08288148721920992,
+      "numerator": 90,
+      "denominator": 1291
+    },
+    "REWRITE_correction_rate": {
+      "estimate": 0.16082004555808657,
+      "ci_low": 0.14624145785876994,
+      "ci_high": 0.17585421412300684,
+      "numerator": 353,
+      "denominator": 2195
+    },
+    "REWRITE_regression_rate": {
+      "estimate": 0.1103448275862069,
+      "ci_low": 0.09517241379310344,
+      "ci_high": 0.12551724137931033,
+      "numerator": 160,
+      "denominator": 1450
+    }
+  }
+}

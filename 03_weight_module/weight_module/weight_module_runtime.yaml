@@ -1,0 +1,6 @@
+text_analysis:
+  enabled: true
+  device: auto
+
+runtime:
+  workspace_root: /mnt/data_1/yds/多模态/权重模块

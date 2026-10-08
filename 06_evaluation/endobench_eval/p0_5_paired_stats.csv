@@ -1,0 +1,6 @@
+protocol,left,right,N,left_correct,right_correct,both_correct,left_only_correct,right_only_correct,both_wrong,delta_pp,exact_mcnemar_p,paired_bootstrap_ci_low,paired_bootstrap_ci_high
+fixed-budget+conservative-fallback,Single,Config4-NoMemory,1002,403,414,349,54,65,534,1.097804391217565,0.35935826390511066,-0.9980039920159722,3.1936127744510987
+fixed-budget+conservative-fallback,Config4-NoMemory,Config4-Memory,1002,414,427,340,74,87,501,1.2974051896207583,0.34431351459658854,-1.19760479041916,3.792415169660679
+ACCEPT-stops,Standard No Memory,M+ Only,1002,419,415,356,63,59,524,-0.39920159680638717,0.7860578568938604,-2.4950099800399252,1.79640718562874
+ACCEPT-stops,Standard No Memory,M- Only,1002,419,418,373,46,45,538,-0.09980039920159679,1.0,-1.9960079840319334,1.6966067864271461
+ACCEPT-stops,Standard No Memory,Full Memory,1002,419,407,353,66,54,529,-1.1976047904191618,0.3153033008322578,-3.3932135728542923,0.8982035928143728

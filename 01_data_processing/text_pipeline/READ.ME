@@ -1,0 +1,193 @@
+# 多模态项目：数据库与向量库说明
+
+本文档基于 `code/` 下现有脚本和当前落盘文件整理。
+
+## 1. 两层存储位置
+
+### 第一层：中央文本数据库（原始文本数据）
+- 主库路径：`/mnt/data_1/yds/多模态/data/text_database.db`
+- 测试库路径：`/mnt/data_1/yds/多模态/data/test_text_database.db`
+- 构建脚本：`/mnt/data_1/yds/多模态/code/build_text_database.py`
+- 数据来源：`assetpack.jsonl`（可传单文件或目录递归）
+
+### 第二层：Milvus 向量库（由第一层构建）
+- 主库路径：`/mnt/data_1/yds/多模态/data/vector_store.db`
+- 测试库路径：`/mnt/data_1/yds/多模态/data/test_vector_store.db`
+- 构建脚本：
+  - 单机版：`/mnt/data_1/yds/多模态/code/build_vector_store.py`
+  - 多 GPU 版：`/mnt/data_1/yds/多模态/code/build_vector_store_multi_gpu.py`
+- 查询脚本：`/mnt/data_1/yds/多模态/code/search_vector_store.py`
+- 默认集合名：`text_blocks`
+
+## 2. 第一层数据库结构（SQLite）
+
+### 表 1：`documents`
+字段：
+- `doc_id` TEXT PRIMARY KEY：文档唯一 ID（由 `doc_out_dir` 提取）
+- `doc_name` TEXT NOT NULL：文档名
+- `source_path` TEXT：原始路径
+- `page_count` INTEGER：页数统计
+- `block_count` INTEGER：文本块数统计
+- `created_at` TIMESTAMP
+- `updated_at` TIMESTAMP
+- `extra_json` TEXT：额外元信息（JSON 字符串）
+
+### 表 2：`text_blocks`
+字段：
+- `block_id` INTEGER PRIMARY KEY AUTOINCREMENT
+- `doc_id` TEXT NOT NULL：关联 `documents.doc_id`
+- `page_idx` INTEGER NOT NULL：页码
+- `content_hash` TEXT NOT NULL：文本内容哈希
+- `text` TEXT NOT NULL：文本内容
+- `bbox` TEXT：边界框 JSON
+- `coord_sys` TEXT：坐标系统
+- `mineru_version` TEXT
+- `is_noise` BOOLEAN DEFAULT 0
+- `char_length` INTEGER：文本长度
+- `created_at` TIMESTAMP
+
+外键：
+- `FOREIGN KEY (doc_id) REFERENCES documents(doc_id) ON DELETE CASCADE`
+
+索引：
+- `idx_blocks_doc_id` on `text_blocks(doc_id)`
+- `idx_blocks_page` on `text_blocks(page_idx)`
+- `idx_blocks_hash` on `text_blocks(content_hash)`
+- `idx_blocks_length` on `text_blocks(char_length)`
+
+### 当前主库统计（`text_database.db`）
+- `documents`: 217
+- `text_blocks`: 355446
+
+## 3. 第二层向量库结构（Milvus Lite）
+
+`build_vector_store.py` / `build_vector_store_multi_gpu.py` 中 `create_collection()` 定义的集合 Schema：
+
+- `pk`: INT64, 主键, auto_id
+- `block_id`: INT64（回链 SQLite 的 `text_blocks.block_id`）
+- `text_hash`: VARCHAR(64)
+- `doc_id`: VARCHAR(16)
+- `doc_name`: VARCHAR(128)
+- `page_idx`: INT64
+- `text`: VARCHAR(8192)
+- `summary`: VARCHAR(512)
+- `metadata`: JSON（当前写入 `bbox`, `char_length`）
+- `lang`: VARCHAR(8)（中/英简单判断）
+- `sparse_vector`: SPARSE_FLOAT_VECTOR（BM25）
+- `dense_vector`: FLOAT_VECTOR（BGE-M3）
+
+索引：
+- 稀疏索引：`SPARSE_INVERTED_INDEX`, `metric_type=IP`（`sparse_vector`）
+- 稠密索引：`IVF_FLAT`, `metric_type=IP`, `nlist=min(4096,max(1024,dim))`（`dense_vector`）
+
+## 4. 两层关系与构建流程
+
+1. 先运行 `build_text_database.py`：从 `assetpack.jsonl` 抽取纯文本（`type == "text"`）写入 SQLite。  
+2. 再运行 `build_vector_store.py` 或 `build_vector_store_multi_gpu.py`：从 SQLite 读 `text_blocks`，计算：
+   - 稀疏向量：BM25
+   - 稠密向量：BGE-M3
+   然后插入 Milvus 集合 `text_blocks`。
+3. 查询阶段（`search_vector_store.py`）默认连接：
+   - Milvus：`/mnt/data_1/yds/多模态/data/vector_store.db`
+   - 集合：`text_blocks`
+   - 搜索字段：`dense_vector`
+
+## 5. 相关文件一览
+- `code/build_text_database.py`：第一层库构建
+- `code/build_vector_store.py`：第二层库构建（单机）
+- `code/build_vector_store_multi_gpu.py`：第二层库构建（多 GPU）
+- `code/search_vector_store.py`：向量检索接口
+- `code/test_pipeline.py`：测试流程（测试库路径）
+- `code/clean_text_database_stage1.py`：第一阶段规则清洗
+
+## 6. 清洗操作记录（2026-03-13）
+
+### Stage-1（规则清洗）执行记录
+- 脚本：`/mnt/data_1/yds/多模态/code/clean_text_database_stage1.py`
+- 输入库：`/mnt/data_1/yds/多模态/data/text_database.db`
+- 输出中间库（工作副本）：`/mnt/data_1/yds/多模态/data/text_database_stage1_clean.db`
+- 归档目录：`/mnt/data_1/yds/多模态/data/cleaning_runs/2026-03-13_stage1_rule/`
+- 归档库：`/mnt/data_1/yds/多模态/data/cleaning_runs/2026-03-13_stage1_rule/text_database_stage1_clean.db`
+- 运行报告：`/mnt/data_1/yds/多模态/data/cleaning_runs/2026-03-13_stage1_rule/run_report.json`
+
+### Stage-1 清洗配置
+- `min_length = 5`
+- `dedup_hash = true`
+
+### Stage-1 结果
+- 原始文本块：`355446`
+- 删除文本块：`25485`（`7.17%`）
+- 保留文本块：`329961`（`92.83%`）
+- 文档数：`217`（不变）
+
+### 删除原因分布
+- `too_short_lt_5`: 17488
+- `duplicate_content_hash`: 5200
+- `publication_meta`: 1669
+- `catalog_slash_page`: 891
+- `low_info_density_short`: 73
+- `chapter_only_heading`: 66
+- `high_symbol_ratio_short`: 56
+- `only_symbols`: 21
+- `figure_table_short_caption`: 18
+- `short_label_with_number`: 3
+
+### 向量库处理状态
+- 当前**暂不**切换向量库构建输入库到 `text_database_stage1_clean.db`。
+- 该库是中间版本，后续还要进行下一阶段清洗（LLM 清洗）后再确定最终库。
+
+### 下一步清洗（Stage-2，LLM）准备
+- 候选导出脚本：`/mnt/data_1/yds/多模态/code/prepare_llm_cleaning_candidates.py`
+- 输入库：`/mnt/data_1/yds/多模态/data/text_database_stage1_clean.db`
+- 候选文件：`/mnt/data_1/yds/多模态/data/cleaning_runs/2026-03-13_stage1_rule/stage2_llm_candidates.jsonl`
+- 导出参数：`min_score=3`, `limit=50000`
+- 实际导出：`43779` 条（仅导出候选，不改库）
+
+### Stage-2 Step1（GPT API 低语义/乱码清洗）
+- 执行脚本：`/mnt/data_1/yds/多模态/code/stage2_llm_clean_step1.py`
+- 目标：删除不含完整语义的信息块、枚举残片、乱码/OCR噪声
+- 处理方式：`规则初筛（auto keep/drop） + GPT 批量判定`
+- 输出：新数据库 + 审计表 `cleaning_rejections_stage2_step1`
+
+推荐执行命令（全量）：
+```bash
+python3 /mnt/data_1/yds/多模态/code/stage2_llm_clean_step1.py \
+  --input-db /mnt/data_1/yds/多模态/data/text_database_stage1_clean.db \
+  --output-db /mnt/data_1/yds/多模态/data/text_database_stage2_step1_clean.db \
+  --work-dir /mnt/data_1/yds/多模态/data/cleaning_runs/2026-03-13_stage2_step1 \
+  --model gpt-4.1-mini \
+  --batch-size 25 \
+  --candidate-score 2
+```
+
+## 7. 最终结果（2026-03-15）
+
+### 最终数据库路径
+- **最终库**：`/mnt/data_1/yds/多模态/data/text_database_stage2_rulekeep_llm_verified.db`
+
+### Stage-2（检索价值优先）全量结果
+- 脚本：`/mnt/data_1/yds/多模态/code/stage2_llm_clean_step1.py`
+- 输入库：`/mnt/data_1/yds/多模态/data/text_database_stage1_clean.db`
+- 输出库：`/mnt/data_1/yds/多模态/data/text_database_stage2_step1_retrieval_value_strict_clean.db`
+- 模型：`gpt-4o`
+- 结果：
+  - 审计记录：`329961`
+  - `drop`: `103408`
+  - `rewrite`: `408`
+  - `text_blocks`: `226553`
+
+### 规则保留二次复核（仅复核规则保留数据）
+- 脚本：`/mnt/data_1/yds/多模态/code/verify_rule_kept_with_llm.py`
+- 输入库：`/mnt/data_1/yds/多模态/data/text_database_stage2_step1_retrieval_value_strict_clean.db`
+- 输出库（最终）：`/mnt/data_1/yds/多模态/data/text_database_stage2_rulekeep_llm_verified.db`
+- 模型：`gpt-4o`
+- 仅复核对象：`source='rule' AND action='keep'`
+- 复核结果：
+  - 复核总数：`217841`
+  - `drop`: `53244`
+  - `rewrite`: `409`
+  - 最终 `text_blocks`: `173309`
+
+### 最终库审计表
+- `cleaning_audit_stage2_step1`：Stage-2 主清洗审计（规则+LLM）
+- `cleaning_audit_stage2_rule_keep_llm`：规则保留二次LLM复核审计

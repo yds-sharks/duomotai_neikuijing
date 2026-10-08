@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*/data/tmp/
+.claude/settings.local.json
+agentic/data_construction/api_config.local.json
+agentic/data_construction/api_config*.private.json
+agentic/data_construction/verified*/
+agentic2/

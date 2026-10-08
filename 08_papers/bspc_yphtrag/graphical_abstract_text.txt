@@ -1,0 +1,1 @@
+YpathRAG introduces a supportiveness-aware retrieval and reranking framework for pathology question answering. By combining dense and lexicon-guided sparse retrieval with a dual-head Supportive Evidence Verifier, it achieves 0.9864 Precision@5 on reranking and improves corpus-level NDCG@10 from 0.3368 to 0.3972 without increasing retrieval depth.

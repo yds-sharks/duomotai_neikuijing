@@ -1,0 +1,14 @@
+{
+  "api_key": "PASTE_YOUR_KEY_HERE",
+  "base_url": "https://api.deerapi.com/v1",
+  "model": "gpt-4o-mini",
+  "include_pdf_page_images": false,
+  "pdf_dpi": 120,
+  "max_pdf_pages": 2,
+  "max_image_bytes": 4000000,
+  "max_pdf_page_image_bytes": 4000000,
+  "min_confidence": 0.7,
+  "sleep": 0.2,
+  "timeout": 180,
+  "max_retries": 3
+}

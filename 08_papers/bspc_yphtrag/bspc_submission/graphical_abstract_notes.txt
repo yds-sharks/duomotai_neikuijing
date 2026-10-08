@@ -1,0 +1,9 @@
+Draft graphical abstract asset: `graphical_abstract.pdf`
+
+Current source:
+- Reused from `figure/framework.pdf`
+
+Recommended follow-up before submission:
+- Check whether the journal system prefers PDF, TIFF, EPS, or high-resolution PNG.
+- If needed, simplify text density and enlarge the two-stage pipeline labels for stand-alone readability.
+- Confirm the final exported size matches the submission system requirements.

@@ -1,0 +1,28 @@
+{
+  "current_machine_inputs": {
+    "retrieval_export_jsonl": {
+      "path": "/mnt/data_10/mwx/workspace/multi_modal_rag/evaluate_benchmark/rag_retrieval_export/output/20260511_151007/retrieval_export.jsonl",
+      "rows": 6832,
+      "size": "117M",
+      "git_package_target": "data/retrieval_export.jsonl",
+      "note": "Large file. Not copied into this git package because it is over GitHub's regular 100MiB file limit."
+    },
+    "main_db": {
+      "path": "/mnt/data_1/yds/多模态/data_house/multimodal_samples.db",
+      "size": "390M",
+      "git_package_target": "data/multimodal_samples.db",
+      "note": "Large SQLite mapping database. Keep outside git or track with Git LFS."
+    },
+    "embedding_model": {
+      "path": "/mnt/data_1/yds/models/Qwen/Qwen3-VL-Embedding-2B",
+      "size": "4.3G",
+      "argument": "--model-path",
+      "note": "Model directory is not suitable for normal git tracking."
+    }
+  },
+  "sample_files_in_package": {
+    "retrieval_export_sample": "data/sample/retrieval_export.sample.jsonl",
+    "smoke_output": "output/sample/endobench_multimodal_ppr_top3_smoke.jsonl",
+    "smoke_debug_output": "output/sample/endobench_multimodal_ppr_top3_smoke_debug.jsonl"
+  }
+}

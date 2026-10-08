@@ -1,0 +1,255 @@
+\section{Method}
+\label{sec:method}
+
+Figure~\ref{fig:architecture} presents AgenticRL as a budgeted control process
+over a fixed multimodal RAG environment. The retrieval modules, deployed vector
+index, and generator are fixed during controller optimization. At each round,
+a smaller trainable controller selects candidate evidence and chooses whether
+to preserve the current evidence with \textsc{Accept} or redirect retrieval with
+\textsc{Rewrite}. Its decisions are conditioned on a trajectory-aware state:
+the latest non-empty retained set, which is the only memory the generator ever
+sees, and an append-only history of failed retrievals, which only the controller
+sees. A fixed three-round inference wrapper maintains both and exposes the
+former to the generator once the budget is exhausted; the wrapper is
+deterministic and holds no information of its own, and it exists because
+retained evidence is useful only if a later round can reuse it.
+
+\begin{figure*}[t]
+  \centering
+  \IfFileExists{figures/fig2_agenticrl_architecture.pdf}{%
+    \includegraphics[width=0.96\textwidth]{fig2_agenticrl_architecture.pdf}}{%
+    \framebox[0.95\textwidth]{\rule{0pt}{4.2cm}\ Figure~2 placeholder (system architecture)}}
+  \caption{AgenticRL couples a frozen multimodal retrieval environment with a
+  fixed-budget refinement wrapper. At each step, the controller makes
+  candidate-level \textsc{Keep}/\textsc{Drop} decisions and a round-level
+  \textsc{Accept}/\textsc{Rewrite} decision. The latest non-empty retained
+  evidence $M_t^+$ is generation-visible, whereas append-only failed traces
+  $M_t^-$ are controller-only. Training evaluates single-step action
+  consequences and updates only the controller.}
+  \label{fig:architecture}
+\end{figure*}
+
+\subsection{Problem Formulation and Fixed Environment}
+\label{sec:formulation}
+
+A multiple-choice instance is $x=(q,I_q,\mathcal{A})$, where $q$ is the
+question, $I_q$ is the query image, and
+$\mathcal{A}=\{a_1,\ldots,a_m\}$ is the option set. The controller may
+condition on $\mathcal{A}$, but never observes the gold option label
+$a^\star$. We distinguish the information available to each component:
+\begin{equation}
+\begin{aligned}
+ x^{\mathrm{ctrl}}_t &=(q,I_q,\mathcal{A},z_t,\mathcal{C}_t,M_t^+,M_t^-),\\
+ x^{\mathrm{ret}}_t  &=(z_t,I_q,\ell_x),\\
+ x^{\mathrm{gen}}    &=(q,I_q,\mathcal{A},E),
+\end{aligned}
+\label{eq:component-inputs}
+\end{equation}
+where $z_t$ is the current retrieval query, $\ell_x$ is a test-time
+anatomical routing signal, and $E$ is the final evidence context. In
+particular, $M^-$ and $a^\star$ are never included in the generator input.
+
+The environment contains text and image retrievers $R_T,R_I$, a deployed
+vector index $\mathcal{I}$, and a vision-language generator $G$. Each indexed
+unit stores text/image content, source and anatomical metadata, and
+channel-specific scores. The gold answer is used only to compute utility after
+executing a training action.
+
+\subsection{Domain-Adaptive Multimodal Retrieval}
+\label{sec:environment}
+
+At round $t$, the text channel uses the current query $z_t$, whereas the image
+channel uses the original query image $I_q$. In the optional modality-weighting
+variant, a fixed routing function estimates their query-dependent
+informativeness:
+\begin{equation}
+ (\alpha_t^T,\alpha_t^I)=f_{\mathrm{route}}(z_t,I_q),\qquad
+ \alpha_t^T+\alpha_t^I=1.
+ \label{eq:modality-weights}
+\end{equation}
+The routing function combines a text-density classifier, a visual-dependence
+classifier, and a density ranker. Its parameters remain fixed, but its output is
+recomputed after rewriting because $z_t$ changes. This module is evaluated in
+separate front-end experiments; the reported 42.84\% memory-aware
+configuration uses equal channel quotas without adaptive weighting.
+
+The examination type and current query determine a gastrointestinal
+anatomical partition $\ell_x$. The examination type is the endoscopy-type field
+that the benchmark provides with each question as part of its input
+specification; it is available at test time and is independent of the gold
+answer, task label, and evaluation category. When it is absent or incompatible
+with the current query, or when the examination covers no single
+gastrointestinal site, no partition constraint is applied and retrieval
+searches the full index. Otherwise it is applied as a Milvus metadata
+pre-filter before approximate-nearest-neighbor search. The two channels
+retrieve from the selected partition:
+\begin{equation}
+ \mathcal{C}_t^T=R_T(z_t;\mathcal{I}_{\ell_x}),\qquad
+ \mathcal{C}_t^I=R_I(I_q;\mathcal{I}_{\ell_x}).
+ \label{eq:dual-retrieval}
+\end{equation}
+When modality weighting is enabled, scores are normalized within each channel
+before fusion,
+\begin{equation}
+ s_t(c)=\alpha_t^T\widetilde{s}_t^T(c)
+       +\alpha_t^I\widetilde{s}_t^I(c).
+ \label{eq:fusion}
+\end{equation}
+Each channel first retrieves 20 neighbors with \texttt{nprobe}=64. After
+optional fusion, up to six candidates per channel form the 12-item controller
+pool $\mathcal{C}_t$. Persistent evidence identifiers are used when
+the same source is encountered again across rounds. Every rewrite traverses
+this complete path again; no retriever, routing module, fusion parameter,
+index entry, or generator parameter is updated.
+
+\subsection{Budgeted Closed-Loop Controller}
+\label{sec:controller}
+
+The inference wrapper maintains states with different consumers. $M_t^+$
+stores the current best evidence, defined as the latest non-empty
+\textsc{Keep} set. It remains visible to the controller across rounds and is
+the only memory supplied to the final generator. $M_t^-$ contains failed
+retrieval traces, represented by the previous query and a deterministic compact
+serialization of its rejected candidates. It is append-only, controller-visible,
+and naturally bounded by the three-round budget. Thus $M^-$ is retrieval
+history rather than negative answer evidence: it may guide reformulation but
+cannot enter the answer context, alter index scores, or remove candidates.
+
+With remaining decision budget $b_t$, the state is
+\begin{equation}
+ s_t=(x,z_t,\mathcal{C}_t,M_t^+,M_t^-,b_t).
+ \label{eq:state}
+\end{equation}
+The structured action is
+\begin{equation}
+ a_t=(K_t,y_t,\widetilde z_{t+1}),\quad
+ K_t\subseteq\mathcal{C}_t,\quad
+ y_t\in\{\textsc{Accept},\textsc{Rewrite}\},
+ \label{eq:action}
+\end{equation}
+where $\widetilde z_{t+1}$ is empty for \textsc{Accept} and contains the new
+query for \textsc{Rewrite}.
+The policy emits this action as JSON containing candidate decisions, the round
+action, and an optional rewritten query. Candidate identifiers are range
+checked and duplicates are removed by the shared parser.
+
+Retained evidence follows replacement rather than union semantics:
+\begin{equation}
+ M_{t+1}^+=
+ \begin{cases}
+ K_t, & K_t\neq\varnothing,\\
+ M_t^+, & K_t=\varnothing.
+ \end{cases}
+\label{eq:mplus}
+\end{equation}
+Consequently, a newly selected non-empty set becomes the current best state,
+whereas an empty selection leaves the previous state unchanged. In the
+memory-aware protocol, an initial \textsc{Rewrite} deterministically initializes
+\begin{equation}
+ M_1^+=\operatorname{Top3}(\mathcal{C}_0).
+ \label{eq:mplus-init}
+\end{equation}
+This answer-independent initialization is reported explicitly and is not
+treated as learned selection. Each rewrite also appends
+\begin{equation}
+ M_{t+1}^-=M_t^-\cup
+ \{(z_t,\phi(\mathcal{C}_t\setminus K_t))\},
+ \label{eq:mminus}
+\end{equation}
+where $\phi$ is the deterministic trace template used by the controller
+prompt; it introduces no additional trainable summarizer.
+
+If $y_t=\textsc{Accept}$, the wrapper updates $M_{t+1}^+$ and proceeds to the
+next refinement step without another retrieval call. If
+$y_t=\textsc{Rewrite}$, $z_{t+1}$ is executed through the same frozen retrieval
+chain to obtain $\mathcal{C}_{t+1}$. One round denotes one controller decision,
+and both branches consume one unit of the fixed three-round refinement budget.
+The generator is called after the budget is exhausted using the final
+$M_T^+$. A structured-output failure skips the corresponding state update and
+continues to the next step. If no round produces retained evidence, the system
+reuses the original single-round prediction. These wrapper rules are
+deterministic and are not learned by the controller.
+Thus, \textsc{Accept} means ``preserve evidence without retrieval at this
+step,'' rather than early termination; termination is fixed by the refinement
+budget. The learned round action controls retrieval allocation, not when the
+complete system stops.
+
+\subsection{Executed-Action Utility}
+\label{sec:utility}
+
+The controller is trained from evidence effects on the frozen generator. Let
+$P_G(a^\star\mid q,I_q,E)$ be the next-token probability normalized over valid
+option labels. Evidence utility is its gain over the same generator without
+retrieval:
+\begin{equation}
+ U(E)=\log P_G(a^\star\mid q,I_q,E)
+      -\log P_G(a^\star\mid q,I_q,\varnothing).
+ \label{eq:utility}
+\end{equation}
+The subtraction provides a common diagnostic scale and cancels within a GRPO
+group because all actions share the same no-evidence term.
+
+For \textsc{Accept}, the executed context is the selected evidence
+$E_t^A=K_t$. For \textsc{Rewrite}, the environment first executes the
+new query and obtains $\mathcal{C}_{t+1}$. Its training-time context is the
+five highest-ranked newly returned candidates:
+\begin{equation}
+ E_t^R=\operatorname{Top5}(\mathcal{C}_{t+1}),\qquad
+ U_t^A=U(E_t^A),\quad U_t^R=U(E_t^R).
+ \label{eq:branch-utility}
+\end{equation}
+This is a deterministic one-step retrieval-lookahead surrogate, not a
+multi-round trajectory return: it evaluates whether a rewrite improves the
+deployed retriever's immediate evidence. What a rewrite controls is the pool it
+returns, whereas what a later round keeps from that pool is a selection decision
+already supervised by $U_t^A$ on the same scale; moreover the retained state
+after a rewrite is the top-ranked candidates of the new pool or a subset of
+them, so the quality of that pool bounds what any later selection can retain.
+Training states consequently do not unroll the three-round inference wrapper.
+Although the two actions construct evidence differently, both are measured in
+the same generator log-probability units.
+This avoids a language-only rewrite score and penalizes fluent reformulations
+that fail against the actual index.
+
+\subsection{Three-Stage Controller Optimization}
+\label{sec:optimization}
+
+\paragraph{Supervised fine-tuning.}
+Teacher actions initialize the structured schema and basic selection,
+sufficiency, and rewrite behavior. Invalid JSON, out-of-range identifiers, and
+schema-inconsistent rewrites are removed. SFT minimizes token-level negative
+log-likelihood on controller outputs.
+
+\paragraph{Rejection-sampling fine-tuning.}
+Starting from the SFT policy, we sample structured actions and execute their
+retrieval consequences. RFT retains policy actions with useful
+generator-derived outcomes and balances rewrite-win states, evidence-selection
+states, and trivial states. The retained actions are optimized with the
+same supervised objective, moving the controller from teacher imitation toward
+actions that work in the deployed environment.
+
+\paragraph{Group-relative policy optimization.}
+For each state, the policy samples a group of eight actions. After executing
+each action, utilities $\{U_i\}_{i=1}^8$ produce normalized advantages
+\begin{equation}
+ A_i=\frac{U_i-\operatorname{mean}_j U_j}
+ {\max(\operatorname{std}_j U_j,0.5)}.
+ \label{eq:advantage}
+\end{equation}
+Groups with utility spread below $0.3$ are skipped. During training, two of the
+eight samples are forced to explore \textsc{Rewrite}; these samples expose the
+policy to retrieval consequences but their forced prefixes do not receive
+policy-gradient credit. The remaining actions are sampled normally. The
+clipped GRPO objective includes a KL penalty to the fixed RFT reference:
+\begin{equation}
+ \mathcal{L}_{\mathrm{GRPO}}=
+ -\mathbb{E}_i\!\left[
+ \min(r_iA_i,\operatorname{clip}(r_i,1-\epsilon,1+\epsilon)A_i)
+ -\beta D_{\mathrm{KL}}(\pi_\theta\Vert\pi_{\mathrm{RFT}})
+ \right].
+ \label{eq:grpo}
+\end{equation}
+Only controller parameters are updated. In summary, SFT establishes valid
+actions, RFT filters actions using executed retrieval outcomes, and GRPO
+optimizes their relative utility without changing the retrieval environment or
+generator.

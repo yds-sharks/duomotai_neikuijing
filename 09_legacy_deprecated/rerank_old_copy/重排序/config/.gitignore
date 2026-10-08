@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Runtime outputs.
+output/*.jsonl
+output/*.log
+!output/sample/
+!output/sample/*
+
+# Large local inputs and models. Use Git LFS or external storage if needed.
+data/retrieval_export.jsonl
+data/multimodal_samples.db
+data/legacy/
+models/

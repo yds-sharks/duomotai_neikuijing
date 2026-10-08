@@ -1,0 +1,32 @@
+task: density_rank
+
+data:
+  path: /mnt/data_1/yds/多模态/权重模块/outputs/density_rank.mainset_14000.v10.jsonl
+  # 每个正向 pair 自动构造一个反向负样本，避免模型学成“第二个永远更高”。
+  augment_reverse: true
+  max_train_samples: null
+  max_val_samples: null
+  max_test_samples: null
+
+model:
+  name_or_path: /mnt/data_1/yds/微调/models/mengzi-bert-base
+  max_length: 96
+  dropout: 0.1
+
+train:
+  seed: 20260423
+  device: auto
+  epochs: 2
+  batch_size: 16
+  gradient_accumulation_steps: 2
+  learning_rate: 1.0e-5
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  fp16: true
+  num_workers: 2
+
+eval:
+  batch_size: 64
+
+output:
+  dir: /mnt/data_1/yds/多模态/权重模块/checkpoints/density_rank_v10_mengzi

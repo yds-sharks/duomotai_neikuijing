@@ -1,0 +1,50 @@
+{
+  "module_root": "/mnt/data_10/mwx/workspace/multi_modal_rag/image_text_weight_module",
+  "rows": 100,
+  "distributions": {
+    "en_question_only": {
+      "L2|R2": 100
+    },
+    "zh_question_only": {
+      "L1|R1": 7,
+      "L2|R2": 23,
+      "L1|R3": 46,
+      "L4|R3": 1,
+      "L1|R2": 5,
+      "L4|R1": 15,
+      "L2|R3": 1,
+      "L3|R1": 1,
+      "L4|R2": 1
+    },
+    "zh_question_plus_options": {
+      "L2|R1": 41,
+      "L2|R2": 17,
+      "L4|R1": 40,
+      "L1|R1": 2
+    }
+  },
+  "change_patterns": {
+    "en_to_zh::L2|R2->L1|R1": 7,
+    "zh_to_zhopt::L1|R1->L2|R1": 5,
+    "en_to_zh::L2|R2->L2|R2": 23,
+    "zh_to_zhopt::L2|R2->L2|R2": 17,
+    "en_to_zh::L2|R2->L1|R3": 46,
+    "zh_to_zhopt::L1|R3->L2|R1": 23,
+    "en_to_zh::L2|R2->L4|R3": 1,
+    "zh_to_zhopt::L4|R3->L4|R1": 1,
+    "zh_to_zhopt::L2|R2->L2|R1": 6,
+    "en_to_zh::L2|R2->L1|R2": 5,
+    "zh_to_zhopt::L1|R2->L2|R1": 5,
+    "en_to_zh::L2|R2->L4|R1": 15,
+    "zh_to_zhopt::L4|R1->L4|R1": 15,
+    "zh_to_zhopt::L1|R3->L4|R1": 21,
+    "en_to_zh::L2|R2->L2|R3": 1,
+    "zh_to_zhopt::L2|R3->L2|R1": 1,
+    "zh_to_zhopt::L1|R1->L4|R1": 2,
+    "en_to_zh::L2|R2->L3|R1": 1,
+    "zh_to_zhopt::L3|R1->L4|R1": 1,
+    "en_to_zh::L2|R2->L4|R2": 1,
+    "zh_to_zhopt::L4|R2->L2|R1": 1,
+    "zh_to_zhopt::L1|R3->L1|R1": 2
+  }
+}

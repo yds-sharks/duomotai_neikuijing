@@ -1,0 +1,5 @@
+numpy
+sentence-transformers
+torch
+transformers
+Pillow

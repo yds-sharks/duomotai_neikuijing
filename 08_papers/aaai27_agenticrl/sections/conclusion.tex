@@ -1,0 +1,32 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented AgenticRL, a trajectory-aware controller for a frozen multimodal
+RAG stack. A budgeted refinement loop couples generation-visible retained
+evidence $M^+$ with controller-only failed retrieval traces $M^-$, while
+generator-derived utility computed after executed retrieval trains only the
+controller.
+
+On EndoBench, cross-round state is what makes budgeted iterative retrieval pay
+off: the same controller and frozen stack reach 39.56\% without it, below the
+40.12\% single-round agent, but 42.84\% with it ($+3.28$ points,
+$p<10^{-12}$), improving the closed-book generator by 2.25 points and correcting
+10.66\% of single-round errors. The protocol-matched ablation attributes
+$+1.30$ of the matched gain to the state itself, the gain is confined to the
+questions on which the state becomes active, and the state simultaneously
+reduces retrieval calls, parse failures, and empty-evidence fallbacks under
+identical execution rules. The resulting system, a 4B controller over a frozen
+8B generator, is 1.15 points above the 41.69\% GPT-4o accuracy reported by
+EndoBench and also exceeds its 34B and 80B medical-specialist models, with
+gains concentrated on spatial and procedural reasoning.
+
+Retained evidence pays off only when a later round can reuse it, and its
+isolated matched contribution is positive but not significant, so the strongest
+evidence supports the complete fixed-budget, evidence-preserving strategy rather
+than a protocol-independent memory effect. The reward requires gold answers
+during training and is most natural for multiple-choice supervision. The
+controller also inherits the behavior of its frozen retrieval environment, and
+iterative retrieval adds latency. Future work will study open-ended rewards,
+transfer across indexes and generators, cost-aware stopping, and prospective
+evaluation; AgenticRL remains a retrieval research framework rather than a
+clinical decision system.

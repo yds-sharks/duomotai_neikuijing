@@ -1,0 +1,99 @@
+version: v1.1
+
+source:
+  image_text_jsonl: /mnt/data_1/yds/多模态/data_house/origin_data/image_text/output_pairs_all_min_filtered.jsonl
+
+seed_pool:
+  raw_total_estimate: 66291
+  target_anchor_total: 14000
+  anchor_ratio:
+    A: 0.70
+    B: 0.20
+    C: 0.10
+
+cleaning:
+  deduplicate_by: text_norm_hash
+  min_char_len: 8
+  max_char_len: 400
+  strip_newlines: true
+  drop_low_confidence_patterns:
+    - 无法判断
+    - 看不清
+    - 不清晰
+    - 未能明确
+
+anchor_scoring:
+  count_caps:
+    anatomy: 2
+    lesion: 2
+    attribute: 3
+    distribution: 2
+    severity: 2
+  weights:
+    anatomy: 0.24
+    lesion: 0.28
+    attribute: 0.16
+    distribution: 0.12
+    severity: 0.10
+    specificity: 0.10
+    generic_penalty: 0.10
+    deictic_penalty: 0.08
+  thresholds:
+    class_A_min: 0.60
+    class_B_min: 0.35
+  enable_score_clamp_01: true
+
+splits:
+  train: 0.8
+  val: 0.1
+  test: 0.1
+  split_unit: semantic_core_hash
+  split_seed: 20260422
+  strict_no_cross_core: true
+
+generation:
+  chain_levels: [L0, L1, L2, L3, L4]
+  style_variants_per_anchor: 3
+  hard_cases_per_anchor: 2
+  use_independent_review: true
+  enforce_level_quota:
+    L0: [0.10, 0.16]
+    L1: [0.16, 0.24]
+    L2: [0.24, 0.30]
+    L3: [0.20, 0.28]
+    L4: [0.10, 0.18]
+
+quality_control:
+  reject_new_fact: true
+  reject_semantic_drift: true
+  reject_non_monotonic_level: true
+  reject_non_monotonic_score: true
+  reject_unnatural_query: true
+  max_new_fact_rate: 0.01
+  max_non_monotonic_rate: 0.03
+  min_review_pass_rate: 0.85
+
+score_formula:
+  level_base:
+    L0: 0.10
+    L1: 0.30
+    L2: 0.50
+    L3: 0.70
+    L4: 0.90
+  offset_scale: 0.16
+  offset_clip: 0.08
+
+outputs:
+  root: /mnt/data_1/yds/多模态/text_density_design/outputs/v1.1
+  files:
+    anchor_pool: anchor_pool.jsonl
+    slot_records: slot_records.jsonl
+    generated_chain: generated_chain.jsonl
+    reviewed_chain: reviewed_chain.jsonl
+    density_cls: density_cls.jsonl
+    dependency_cls: dependency_cls.jsonl
+    density_rank: density_rank.jsonl
+
+expected_scale:
+  single_query_samples: [90000, 110000]
+  rank_pairs: [50000, 70000]

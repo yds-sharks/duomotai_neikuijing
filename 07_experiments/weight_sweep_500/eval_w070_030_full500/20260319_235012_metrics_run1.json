@@ -1,0 +1,10 @@
+{
+  "backend": "qwen3-vl",
+  "model": "/mnt/data_10/mwx/huggingface_cache/hub/models--Qwen--Qwen3-VL-8B-Instruct/snapshots/0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+  "benchmark": "Saint-lsy/EndoBench",
+  "split": "test",
+  "run": 1,
+  "correct": 160,
+  "total": 500,
+  "accuracy": 0.32
+}

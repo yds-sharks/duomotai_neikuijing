@@ -1,0 +1,61 @@
+version: v2.0-limit10
+
+paths:
+  benchmark_query_jsonl: /mnt/data_10/mwx/workspace/multi_modal_rag/evaluate_benchmark/translate_benchmark/output/endobench_test_translated.jsonl
+  benchmark_responses_jsonl: /mnt/data_1/yds/多模态/responses_run1.jsonl
+  legacy_anchor_jsonl: /mnt/data_1/yds/多模态/data_house/origin_data/output_pairs_all_min_filtered_labeled.jsonl
+  output_dir: /mnt/data_1/yds/多模态/权重模块/outputs/v2_pipeline/run10_realapi
+  query_manual_pack_jsonl: /mnt/data_1/yds/多模态/权重模块/outputs/v2_pipeline/run20_realapi/query_manual_pack.limit20.jsonl
+  legacy_manual_pack_jsonl: /mnt/data_1/yds/多模态/权重模块/outputs/v2_pipeline/run20_realapi/legacy_manual_pack.limit20.jsonl
+  label_guideline_path: /mnt/data_1/yds/多模态/权重模块/docs/LABEL_GUIDELINE_V2_REFINED.md
+  alignment_case_pack_jsonl: /mnt/data_1/yds/多模态/权重模块/人工审核/06_人工标注输入/alignment_case_pack.v1.reviewed.jsonl
+
+api:
+  key_env: OPENAI_API_KEY
+  base_url: https://api.deerapi.com/v1
+  generation_model: gpt-4o
+  review_model: gpt-4o
+  fallback_models:
+    - gpt-4o-mini
+
+request:
+  concurrency: 4
+  timeout_seconds: 120
+  max_retries: 4
+  temperature_generation: 0.35
+  temperature_review: 0.0
+  use_json_response_format: true
+
+generation:
+  max_jobs: 10
+  query_variants_per_job: 1
+  require_independent_dependency_labeling: false
+  require_independent_routing_preference: true
+  require_retrieval_value_tag: true
+  keep_rationale: false
+  max_alignment_cases_in_prompt: 8
+  skip_legacy_buckets:
+    - weak_or_discard
+    - borderline
+  anchor_definition:
+    count_as_retrieval_anchor:
+      - specific_anatomy
+      - specific_lesion
+      - pathology_category
+      - professional_term
+      - discriminative_attribute
+    do_not_count_as_retrieval_anchor:
+      - 内镜
+      - 内窥镜
+      - 图片
+      - 图像
+      - 病变
+      - 异常
+      - 情况
+      - 问题
+
+quality:
+  max_deictic_without_entity_rate: 0.03
+  max_template_dup_rate: 0.10
+  min_review_pass_rate: 0.85
+  min_cross_profile_coverage: 2

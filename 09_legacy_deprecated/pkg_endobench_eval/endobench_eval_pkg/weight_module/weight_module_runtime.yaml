@@ -1,0 +1,6 @@
+text_analysis:
+  enabled: true
+  device: auto
+
+runtime:
+  workspace_root: PKGROOT/weight_module

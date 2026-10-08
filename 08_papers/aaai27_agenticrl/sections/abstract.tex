@@ -1,0 +1,28 @@
+\begin{abstract}
+Multimodal RAG fails when the initial candidate pool lacks answer-supporting
+evidence: selection can remove distractors, but cannot recover evidence that
+was never retrieved. We study how a lightweight controller can preserve useful
+evidence and redirect retrieval over a fixed budget while the retrievers,
+deployed index, and generator remain frozen. We present AgenticRL, a
+closed-loop framework in which one policy jointly selects candidate evidence
+and chooses whether to preserve the current evidence or execute a rewritten
+query. The inference wrapper separates generation-visible retained evidence
+from controller-only failed retrieval traces, preventing unsuccessful search
+history from contaminating the final answer context. During training, rewritten
+queries are executed against the deployed index, and both preservation and
+rewrite actions are evaluated on a shared utility scale derived from the frozen
+generator. This grounds controller learning in the actual behavior of the
+retriever, index, and generator without updating any of them. We optimize the
+controller with an SFT--RFT--GRPO curriculum using retrieval-need-aware
+sampling and forced rewrite exploration. On all 6,832 questions of EndoBench,
+AgenticRL reaches 42.84\% accuracy, improving the same frozen generator by
+2.25 percentage points and single-round control by 2.72 points
+($p<0.0001$). It corrects 10.66\% of single-round errors, with the largest
+gains on spatial and procedural reasoning. Its accuracy is also 1.15 points
+above the 41.69\% GPT-4o result reported by EndoBench, although this comparison
+is secondary because AgenticRL uses an external index. Matched ablations show a
+positive but non-significant 1.30-point contribution from cross-round state,
+so the strongest evidence supports the complete fixed-budget,
+evidence-preserving control strategy rather than a protocol-independent memory
+effect.
+\end{abstract}

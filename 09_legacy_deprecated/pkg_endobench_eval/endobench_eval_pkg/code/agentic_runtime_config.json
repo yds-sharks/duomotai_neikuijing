@@ -1,0 +1,19 @@
+{
+  "paths": {
+    "project_root": "PKGROOT",
+    "main_db_path": "PKGROOT/assets/multimodal_samples.db",
+    "multimodal_search_dir": "PKGROOT/retrieval_mm",
+    "output_dir": "PKGROOT/results/runtime"
+  },
+  "retrieval": {
+    "milvus_db_path": "PKGROOT/assets/multimodal_vector_indexes.db",
+    "text_model_path": "PKGROOT/models/bge-m3",
+    "image_model_path": "PKGROOT/models/Qwen3-VL-8B-Instruct",
+    "text_device": "auto",
+    "image_device": "cuda",
+    "image_torch_dtype": "auto",
+    "nprobe": 64,
+    "first_stage_text_k": 20,
+    "first_stage_image_k": 20
+  }
+}
