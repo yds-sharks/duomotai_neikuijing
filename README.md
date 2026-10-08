@@ -58,6 +58,7 @@ BGE-M3(文本) + Qwen3-VL(图像) → Mengzi-BERT 密度/依赖门控 → ODSC /
 
 ## 六、相关远程仓库
 
+- **本归档仓库**：https://github.com/yds-sharks/duomotai_neikuijing.git
 - `rerank_image_and_text`（05/04 的权威来源）：https://github.com/yds-sharks/rerank_image_and_text.git
 - `agentic`（A100 推送副本）：https://github.com/yds-sharks/agentic.git
 
