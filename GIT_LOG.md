@@ -26,7 +26,7 @@
 - [ ] 训练数据重构与重训（SFT → RFT/DPO → GRPO 全链路，基于新生成器重算 reward）
 - [ ] 中央 Agent Harness：RAG 检索/重排封装为工具模块，由中央 agent 大脑统一调度
 
-**提交**：`（本节提交后回填）`
+**提交**：`0b51d3c` docs: 建立GIT_LOG更新日志(Round2基线盘点+Round1上传记录)（已推送）
 
 ---
 
