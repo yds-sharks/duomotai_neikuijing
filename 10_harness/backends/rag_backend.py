@@ -83,9 +83,16 @@ def build_evidence_filter(cfg: Dict[str, Any]) -> EvidenceFilter:
     if kind == "topk":
         return fallback
     if kind == "agent":
-        from backends.llm_backend import OpenAIChatBrain
+        def build_llm(c):
+            if c.get("backend", "openai") == "transformers":
+                from backends.transformers_backend import TransformersChat
 
-        llm = OpenAIChatBrain(cfg["llm"])
+                return TransformersChat(c)
+            from backends.llm_backend import OpenAIChatBrain
+
+            return OpenAIChatBrain(c)
+
+        llm = build_llm(cfg["llm"])
         return AgentEvidenceFilter(llm=llm, fallback=fallback, max_keep=int(cfg.get("max_keep", 5)))
     raise ValueError(f"unknown evidence filter backend: {kind}")
 

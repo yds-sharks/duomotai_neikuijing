@@ -67,11 +67,19 @@ def render_state_message(
     tool_calls_used: int,
     max_rounds: int,
     max_tool_calls: int,
+    retrieval_hint: str = "",
 ) -> str:
     history = search_history[-MAX_HISTORY_SHOWN:]
     history_block = "\n".join(f"  - {h}" for h in history) if history else "  (none yet)"
+    hint = (
+        f"RETRIEVAL HINT (zh translation of the question; the corpus is Chinese — base your "
+        f"search query on it): {retrieval_hint}\n\n"
+        if retrieval_hint
+        else ""
+    )
     msg = (
         f"TOOL FEEDBACK: {last_tool or '(start)'} -> {last_message or 'new episode, plan your first search'}\n\n"
+        f"{hint}"
         f"PASSAGES RETURNED BY LAST rag_search:\n{render_passages(passages)}\n\n"
         f"EVIDENCE SET: {len(collected)} passage(s) accumulated across all searches\n"
         f"SEARCH HISTORY (do not repeat):\n{history_block}\n\n"

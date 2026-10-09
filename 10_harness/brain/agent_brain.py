@@ -47,6 +47,7 @@ class AgentBrain:
             question=str(item.get("question", item.get("query_text", ""))),
             options=dict(item.get("options", {}) or {}),
             query_image_path=str(item.get("query_image_path", "") or ""),
+            retrieval_hint=str(item.get("retrieval_hint_zh", "") or ""),
         )
         rounds: List[Round] = []
         finish_reason = ""
@@ -62,6 +63,7 @@ class AgentBrain:
                 tool_calls_used=session.tool_calls_used,
                 max_rounds=session.max_rounds,
                 max_tool_calls=session.max_tool_calls,
+                retrieval_hint=session.retrieval_hint,
             )
             call, raw_text = self._decide(state_msg)
             result = self._execute(session, call)

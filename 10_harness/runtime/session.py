@@ -23,6 +23,7 @@ class AgentSession:
         question: str = "",
         options: Optional[Dict[str, Any]] = None,
         query_image_path: str = "",
+        retrieval_hint: str = "",
     ):
         self.config = config
         self.rag = rag
@@ -30,6 +31,7 @@ class AgentSession:
         self.question = question
         self.options = options or {}
         self.query_image_path = query_image_path
+        self.retrieval_hint = retrieval_hint  # zh hint for the zh corpus (e.g. EndoBench translation)
 
         self.collected: List[Dict[str, Any]] = []  # accumulated final passages across rag_search calls
         self._collected_ids: set = set()

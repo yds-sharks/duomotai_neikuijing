@@ -19,10 +19,12 @@ class BrainBackend(Protocol):
 
 
 _JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
+_THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 
 
 def extract_json(text: str) -> Dict[str, Any]:
-    """Pull the first JSON object out of a model reply."""
+    """Pull the first JSON object out of a model reply (strips a <think> block first)."""
+    text = _THINK_RE.sub("", text)
     m = _JSON_RE.search(text)
     if not m:
         raise ValueError(f"no JSON object found in brain reply: {text[:200]!r}")
@@ -42,6 +44,8 @@ class OpenAIChatBrain:
         self._temperature = float(cfg.get("temperature", 0.2))
         self._top_p = float(cfg.get("top_p", 0.9))
         self._max_tokens = int(cfg.get("max_tokens", 512))
+        # vLLM-only extension, e.g. {"enable_thinking": false} for Qwen3.5 chat template
+        self._extra_body = {"chat_template_kwargs": cfg["chat_template_kwargs"]} if cfg.get("chat_template_kwargs") else None
 
     def decide(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
         resp = self._client.chat.completions.create(
@@ -50,6 +54,7 @@ class OpenAIChatBrain:
             temperature=self._temperature,
             top_p=self._top_p,
             max_tokens=self._max_tokens,
+            **({"extra_body": self._extra_body} if self._extra_body else {}),
         )
         text = resp.choices[0].message.content or ""
         return extract_json(text)
@@ -78,4 +83,8 @@ def build_brain(cfg: Dict[str, Any]) -> BrainBackend:
     kind = cfg.get("backend", "openai")
     if kind == "openai":
         return OpenAIChatBrain(cfg)
+    if kind == "transformers":
+        from backends.transformers_backend import TransformersChat
+
+        return TransformersChat(cfg)
     raise ValueError(f"unknown brain backend: {kind}")

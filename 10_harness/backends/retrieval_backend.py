@@ -21,7 +21,12 @@ class RetrievalBackend(Protocol):
 
 
 def load_first_stage_retriever(config: Dict[str, Any]) -> RetrievalBackend:
-    """Build FirstStageRetriever from the archived agentic code dir."""
+    """Build FirstStageRetriever from the archived agentic code dir.
+
+    FirstStageRetriever expects the FULL config shape {"paths": {...}, "retrieval": {...}}
+    (it reads paths.multimodal_search_dir / paths.main_db_path); harness_config.json
+    keeps everything under "retrieval", so re-wrap here.
+    """
     code_dir = Path(config["retrieval"]["code_dir"])
     adapter_path = code_dir / "retrieval_adapter.py"
     if not adapter_path.exists():
@@ -35,7 +40,14 @@ def load_first_stage_retriever(config: Dict[str, Any]) -> RetrievalBackend:
     rcfg = dict(config["retrieval"])
     rcfg.setdefault("first_stage_text_k", rcfg.get("text_k", 20))
     rcfg.setdefault("first_stage_image_k", rcfg.get("image_k", 20))
-    return module.FirstStageRetriever(config=rcfg)  # type: ignore[return-value]
+    full_cfg = {
+        "paths": {
+            "multimodal_search_dir": rcfg["multimodal_search_dir"],
+            "main_db_path": rcfg["main_db_path"],
+        },
+        "retrieval": rcfg,
+    }
+    return module.FirstStageRetriever(config=full_cfg)  # type: ignore[return-value]
 
 
 class MockRetrievalBackend:

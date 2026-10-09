@@ -32,13 +32,20 @@
 
 - [x] **工具粒度反转（用户反馈）**：完整 RAG 封装为**单一工具** `rag_search`（输入 query → 直接输出筛选后文段），原四工具细粒度设计废弃；v0.5 的证据选择 agent 下沉为 RAG 工具内部处理（`AgentEvidenceFilter`，失败回落 TopK）；大脑行为空间精简为 `rag_search` + `submit_answer` 两个动作，只负责查询规划；仓库根 README 与 10_harness README 架构图同步更新
 
+- [x] **Harness v0.2 真实链路冒烟通过**（EndoBench 真实题 ×10，任务：Organ Identification）：全链路 0 错误、10/10 正常提交、平均 2.4 轮/题、平均 5.4 条证据。关键落地：
+  - `make_queries.py`：从 HF 缓存导出真实题（qid=eb_N、选项、答案、图像路径、中文检索提示）；
+  - `backends/transformers_backend.py`：进程内 transformers 推理（vLLM 0.11 不支持 Qwen3_5 架构，原生与 transformers 0.11 后端均不可用），与训练同款 `AutoModelForImageTextToText` 加载，大脑/证据筛选/生成器共享单卡实例（cuda:0）；检索双模型 BGE-M3 cuda:1 / Qwen3-VL-8B cuda:2（图像索引仍为 8B 建，重建前不得换）；
+  - 修复：FirstStageRetriever 需完整 `{"paths","retrieval"}` 配置结构；LLM 输出剥 `<think>` + `chat_template_kwargs(enable_thinking=false)`；观察中注入中文检索提示（题面英文/语料中文）。
+  - **已知短板（v0.2.1 待办）**：生成器 prompt 为纯文本，未输入查询图像——Organ Identification 这类看图题全靠文段描述，导致正确率仅 1/10；下一步给生成器/大脑加图像输入。
+
 **待办**：
 - [ ] 执行生成器切换：修改 eval/grpo 的生成器配置指向 Qwen3.5-4B；如图像编码同步切换，重建图像向量索引
 - [ ] 训练数据重构与重训（SFT → RFT/DPO → GRPO 全链路，基于新生成器重算 reward）
-- [ ] Harness v0.2：接真实后端（vLLM serve Qwen3.5-4B + Milvus）跑通 10 题 smoke，v0.3 EndoBench 批量评测对比 v0.5 pipeline
+- [ ] Harness v0.2.1：生成器与大脑的图像输入（多模态 prompt，对齐 v0.5 生成器的图像用法），再评估真实正确率
+- [ ] Harness v0.3：EndoBench 批量评测（50-100 题）+ 与 v0.5 pipeline 对照
 - [ ] OPD 方法实现（在线策略蒸馏，内化教师/探索知识）
 
-**提交**：`0b51d3c` 建立日志；`95f6724` 回填哈希；`7911f58` 架构重构+统一Qwen3.5-4B+模型复现指南；`1fa91d3` 中央 Agent Harness v0.1；`db6f56b` 工具粒度反转：单一 rag_search（均已推送）
+**提交**：`0b51d3c` 建立日志；`95f6724` 回填哈希；`7911f58` 架构重构+统一Qwen3.5-4B+模型复现指南；`1fa91d3` 中央 Agent Harness v0.1；`db6f56b` 工具粒度反转：单一 rag_search；`<REAL_SMOKE_HASH>` v0.2 真实链路冒烟（均已推送）
 
 ---
 

@@ -127,6 +127,10 @@ def build_reward(cfg: Dict[str, Any]) -> RewardBackend:
     kind = cfg.get("backend", "openai")
     if kind == "openai":
         return OpenAIGeneratorReward(cfg)
+    if kind == "transformers":
+        from backends.transformers_backend import TransformersChat
+
+        return TransformersChat(cfg)
     if kind == "mock":
         return MockGeneratorReward(cfg)
     raise ValueError(f"unknown reward backend: {kind}")

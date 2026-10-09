@@ -53,3 +53,6 @@ api_config.local.json
 
 # ===== 第三方工具（仅本地保留） =====
 third_party/
+
+# harness 本地运行结果（数据结果仅本地保留）
+10_harness/runs/
