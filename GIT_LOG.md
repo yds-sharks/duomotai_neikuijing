@@ -45,7 +45,7 @@
 - [ ] Harness v0.3：EndoBench 批量评测（50-100 题）+ 与 v0.5 pipeline 对照
 - [ ] OPD 方法实现（在线策略蒸馏，内化教师/探索知识）
 
-**提交**：`0b51d3c` 建立日志；`95f6724` 回填哈希；`7911f58` 架构重构+统一Qwen3.5-4B+模型复现指南；`1fa91d3` 中央 Agent Harness v0.1；`db6f56b` 工具粒度反转：单一 rag_search；`<REAL_SMOKE_HASH>` v0.2 真实链路冒烟（均已推送）
+**提交**：`0b51d3c` 建立日志；`95f6724` 回填哈希；`7911f58` 架构重构+统一Qwen3.5-4B+模型复现指南；`1fa91d3` 中央 Agent Harness v0.1；`db6f56b` 工具粒度反转：单一 rag_search；`bde0f7c` v0.2 真实链路冒烟（均已推送）
 
 ---
 
