@@ -14,8 +14,20 @@ from typing import Any, Dict, List, Protocol
 
 
 class BrainBackend(Protocol):
-    def decide(self, messages: List[Dict[str, str]]) -> Dict[str, Any]: ...
+    def decide(self, messages: List[Dict[str, str]], image_path: str = "") -> Dict[str, Any]: ...
     def close(self) -> None: ...
+
+
+def _vision_content(text: str, image_path: str) -> List[Dict[str, Any]]:
+    """OpenAI vision content: base64 image + text (works with vLLM multimodal serving)."""
+    import base64
+
+    with open(image_path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode()
+    return [
+        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
+        {"type": "text", "text": text},
+    ]
 
 
 _JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
@@ -47,10 +59,14 @@ class OpenAIChatBrain:
         # vLLM-only extension, e.g. {"enable_thinking": false} for Qwen3.5 chat template
         self._extra_body = {"chat_template_kwargs": cfg["chat_template_kwargs"]} if cfg.get("chat_template_kwargs") else None
 
-    def decide(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
+    def decide(self, messages: List[Dict[str, str]], image_path: str = "") -> Dict[str, Any]:
+        msgs: Any = messages
+        if image_path:
+            msgs = [dict(m) for m in messages]
+            msgs[-1] = {"role": msgs[-1].get("role", "user"), "content": _vision_content(msgs[-1].get("content", ""), image_path)}
         resp = self._client.chat.completions.create(
             model=self._model,
-            messages=messages,  # type: ignore[arg-type]
+            messages=msgs,  # type: ignore[arg-type]
             temperature=self._temperature,
             top_p=self._top_p,
             max_tokens=self._max_tokens,
@@ -69,7 +85,7 @@ class ScriptedBrain:
         self._script = list(script)
         self._i = 0
 
-    def decide(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
+    def decide(self, messages: List[Dict[str, str]], image_path: str = "") -> Dict[str, Any]:
         if self._i >= len(self._script):
             return {"thought": "script exhausted", "tool": "submit_answer", "args": {}}
         step = self._script[self._i]

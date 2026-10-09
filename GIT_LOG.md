@@ -38,14 +38,19 @@
   - 修复：FirstStageRetriever 需完整 `{"paths","retrieval"}` 配置结构；LLM 输出剥 `<think>` + `chat_template_kwargs(enable_thinking=false)`；观察中注入中文检索提示（题面英文/语料中文）。
   - **已知短板（v0.2.1 待办）**：生成器 prompt 为纯文本，未输入查询图像——Organ Identification 这类看图题全靠文段描述，导致正确率仅 1/10；下一步给生成器/大脑加图像输入。
 
+- [x] **Harness v0.2.1 图像输入修复，正确率 1/10 → 3/10**：生成器与大脑均接入查询图像（同一写法对齐 v0.5 生成器：`{"type":"image"}` 占位 + `processor(text, images=...)`）；验证大脑确实在看图（thought 开始描述内镜图像内容，v0.2 做不到）。逐题对比：eb_3/eb_4/eb_8 由错变对，eb_0 退步（4B 看图判别力边界，v0.2 系纯文本撞对）。落地：
+  - `transformers_backend.py`：`chat/decide/generate/answer_utility` 全部增加 `image_path` 参数，最后一条 user 消息转多模态 content；
+  - `reward_backend.py`/`llm_backend.py`：Protocol 与全部实现同步签名；OpenAI 后端走 base64 data URI 视觉格式（vLLM serve 后直接可用）；
+  - `brain_prompt.py`：系统提示明示图像附在每条消息中；首轮反馈文案改为显式 "FIRST ROUND"（修复大脑误读为“上次检索无结果”）。
+  - **新暴露问题（v0.2.2 待办）**：末轮大脑倾向继续搜索而非提交（2/10 budget_exhausted，虽 generator 兜底答案仍计分且均答对）——末轮提示强制提交可修复。
+
 **待办**：
 - [ ] 执行生成器切换：修改 eval/grpo 的生成器配置指向 Qwen3.5-4B；如图像编码同步切换，重建图像向量索引
 - [ ] 训练数据重构与重训（SFT → RFT/DPO → GRPO 全链路，基于新生成器重算 reward）
-- [ ] Harness v0.2.1：生成器与大脑的图像输入（多模态 prompt，对齐 v0.5 生成器的图像用法），再评估真实正确率
-- [ ] Harness v0.3：EndoBench 批量评测（50-100 题）+ 与 v0.5 pipeline 对照
+- [ ] Harness v0.2.2：末轮强制提交提示（budget_exhausted 题 2/10）；随后 Harness v0.3：EndoBench 批量评测（50-100 题）+ 与 v0.5 pipeline 对照
 - [ ] OPD 方法实现（在线策略蒸馏，内化教师/探索知识）
 
-**提交**：`0b51d3c` 建立日志；`95f6724` 回填哈希；`7911f58` 架构重构+统一Qwen3.5-4B+模型复现指南；`1fa91d3` 中央 Agent Harness v0.1；`db6f56b` 工具粒度反转：单一 rag_search；`bde0f7c` v0.2 真实链路冒烟（均已推送）
+**提交**：`0b51d3c` 建立日志；`95f6724` 回填哈希；`7911f58` 架构重构+统一Qwen3.5-4B+模型复现指南；`1fa91d3` 中央 Agent Harness v0.1；`db6f56b` 工具粒度反转：单一 rag_search；`bde0f7c` v0.2 真实链路冒烟；`<V021_HASH>` v0.2.1 图像输入修复（均已推送）
 
 ---
 

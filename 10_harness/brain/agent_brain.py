@@ -65,7 +65,7 @@ class AgentBrain:
                 max_tool_calls=session.max_tool_calls,
                 retrieval_hint=session.retrieval_hint,
             )
-            call, raw_text = self._decide(state_msg)
+            call, raw_text = self._decide(state_msg, session.query_image_path)
             result = self._execute(session, call)
             # every decision consumes budget, so failed/invalid calls cannot loop forever
             session.advance()
@@ -89,7 +89,9 @@ class AgentBrain:
         gold = str(item.get("answer", "") or "")
         error: Optional[Dict[str, str]] = None
         try:
-            gen = self.reward.generate(session.question, session.options, session.collected)
+            gen = self.reward.generate(
+                session.question, session.options, session.collected, image_path=session.query_image_path
+            )
             prediction = gen.get("prediction", "")
             response = gen.get("response", "")
             u_set = self.reward.utility_from_generation(gen, gold)
@@ -121,13 +123,14 @@ class AgentBrain:
         return traj.compat_dict()
 
     # ------------------------------------------------------------------ internals
-    def _decide(self, state_msg: str):
+    def _decide(self, state_msg: str, image_path: str = ""):
         try:
             decision = self.brain.decide(
                 [
                     {"role": "system", "content": self.system_prompt},
                     {"role": "user", "content": state_msg},
-                ]
+                ],
+                image_path=image_path,
             )
             raw_text = json.dumps(decision, ensure_ascii=False)
             call = ToolCall(

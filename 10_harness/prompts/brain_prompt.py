@@ -19,6 +19,9 @@ def build_system_prompt(tool_specs: List[Dict[str, str]]) -> str:
     tools_block = "\n".join(f"- {s['name']}: {s['description']} | args: {s['args']}" for s in tool_specs)
     return (
         "You are the central brain of a medical multimodal RAG system (endoscopy QA).\n"
+        "The query endoscopy image is attached to each message when present — read it "
+        "directly; it is often decisive for visual questions (organ identification, "
+        "lesion description, finding localization).\n"
         "You do NOT answer from memory and you do NOT manage evidence yourself: a single "
         "tool, rag_search, runs the whole RAG pipeline and returns curated passages. Your "
         "job is query planning: craft the best search query, decide whether to search "
@@ -78,7 +81,7 @@ def render_state_message(
         else ""
     )
     msg = (
-        f"TOOL FEEDBACK: {last_tool or '(start)'} -> {last_message or 'new episode, plan your first search'}\n\n"
+        f"TOOL FEEDBACK: {last_tool or '(start)'} -> {last_message or 'FIRST ROUND: no search has run yet — plan your first rag_search query.'}\n\n"
         f"{hint}"
         f"PASSAGES RETURNED BY LAST rag_search:\n{render_passages(passages)}\n\n"
         f"EVIDENCE SET: {len(collected)} passage(s) accumulated across all searches\n"

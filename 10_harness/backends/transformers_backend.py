@@ -50,13 +50,28 @@ class TransformersChat:
         self.max_tokens = int(cfg.get("max_tokens", 512))
         self.enable_thinking = bool(cfg.get("enable_thinking", cfg.get("chat_template_kwargs", {}).get("enable_thinking", False)))
 
-    def chat(self, messages: List[Dict[str, str]]) -> str:
+    def chat(self, messages: List[Dict[str, str]], image_path: str = "") -> str:
         import torch
 
+        # multimodal call: prepend an image placeholder to the last user turn
+        # (same convention as gen_scorer._option_logits in the v0.5 eval pkg)
+        msgs = [dict(m) for m in messages]
+        pil_imgs = []
+        if image_path:
+            from PIL import Image
+
+            pil = Image.open(image_path).convert("RGB")
+            pil_imgs.append(pil)
+            msgs[-1] = {
+                "role": msgs[-1].get("role", "user"),
+                "content": [{"type": "image"}, {"type": "text", "text": msgs[-1].get("content", "")}],
+            }
         prompt = self.processor.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True, enable_thinking=self.enable_thinking
+            msgs, tokenize=False, add_generation_prompt=True, enable_thinking=self.enable_thinking
         )
-        inputs = self.processor(text=[prompt], return_tensors="pt").to(self.model.device)
+        inputs = self.processor(
+            text=[prompt], images=pil_imgs or None, return_tensors="pt"
+        ).to(self.model.device)
         with torch.inference_mode():
             out = self.model.generate(
                 **inputs,
@@ -68,20 +83,21 @@ class TransformersChat:
         return self.processor.batch_decode(out[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0].strip()
 
     # --- brain / evidence-filter protocol ---
-    def decide(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
-        return extract_json(self.chat(messages))
+    def decide(self, messages: List[Dict[str, str]], image_path: str = "") -> Dict[str, Any]:
+        return extract_json(self.chat(messages, image_path=image_path))
 
     # --- generator protocol (RewardBackend) ---
-    def generate(self, question: str, options: Dict[str, Any], evidence: List[Dict[str, Any]]) -> Dict[str, Any]:
-        prompt = render_generator_prompt(question, options, evidence)
-        text = self.chat([{"role": "user", "content": prompt}])
+    def generate(self, question: str, options: Dict[str, Any], evidence: List[Dict[str, Any]], image_path: str = "") -> Dict[str, Any]:
+        prompt = render_generator_prompt(question, options, evidence, image_attached=bool(image_path))
+        text = self.chat([{"role": "user", "content": prompt}], image_path=image_path)
         return {"response": text, "prediction": extract_option_letter(text, options)}
 
     def utility_from_generation(self, out: Dict[str, Any], gold_answer: str) -> float:
         return 1.0 if gold_answer and out.get("prediction") == gold_answer else 0.0
 
-    def answer_utility(self, question, options, evidence, gold_answer: str = "") -> float:
-        return self.utility_from_generation(self.generate(question, options, evidence), gold_answer)
+    def answer_utility(self, question, options, evidence, gold_answer: str = "", image_path: str = "") -> float:
+        gen = self.generate(question, options, evidence, image_path=image_path)
+        return self.utility_from_generation(gen, gold_answer)
 
     def close(self) -> None: ...
 

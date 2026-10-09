@@ -21,8 +21,9 @@ class RewardBackend(Protocol):
         options: Dict[str, Any],
         evidence: List[Dict[str, Any]],
         gold_answer: str = "",
+        image_path: str = "",
     ) -> float: ...
-    def generate(self, question: str, options: Dict[str, Any], evidence: List[Dict[str, Any]]) -> Dict[str, Any]: ...
+    def generate(self, question: str, options: Dict[str, Any], evidence: List[Dict[str, Any]], image_path: str = "") -> Dict[str, Any]: ...
     def utility_from_generation(self, out: Dict[str, Any], gold_answer: str) -> float: ...
     def close(self) -> None: ...
 
@@ -40,7 +41,9 @@ def extract_option_letter(text: str, options: Dict[str, Any]) -> str:
     return m.group(1) if m else ""
 
 
-def render_generator_prompt(question: str, options: Dict[str, Any], evidence: List[Dict[str, Any]]) -> str:
+def render_generator_prompt(
+    question: str, options: Dict[str, Any], evidence: List[Dict[str, Any]], image_attached: bool = False
+) -> str:
     """Standalone renderer mirroring rag_prompting.build_rag_prompt's contract."""
     opt_lines = "\n".join(f"{k}. {v}" for k, v in options.items())
     ev_lines = []
@@ -49,9 +52,16 @@ def render_generator_prompt(question: str, options: Dict[str, Any], evidence: Li
         body = ev.get("text", "")
         ev_lines.append(f"[{i}] ({src}) {body}")
     ev_block = "\n".join(ev_lines) if ev_lines else "(no evidence collected)"
+    img_note = (
+        "The query endoscopy image is attached as an image input — read it directly and "
+        "combine it with the evidence below.\n\n"
+        if image_attached
+        else ""
+    )
     return (
         "You are a medical QA assistant. Answer the multiple-choice question using the "
         "evidence below. Reply with the option letter only.\n\n"
+        f"{img_note}"
         f"Question: {question}\nOptions:\n{opt_lines}\n\nEvidence:\n{ev_block}\n\nAnswer:"
     )
 
@@ -69,11 +79,21 @@ class OpenAIGeneratorReward:
         self._temperature = float(cfg.get("temperature", 0.2))
         self._max_tokens = int(cfg.get("max_tokens", 512))
 
-    def generate(self, question: str, options: Dict[str, Any], evidence: List[Dict[str, Any]]) -> Dict[str, Any]:
-        prompt = render_generator_prompt(question, options, evidence)
+    def generate(self, question: str, options: Dict[str, Any], evidence: List[Dict[str, Any]], image_path: str = "") -> Dict[str, Any]:
+        prompt = render_generator_prompt(question, options, evidence, image_attached=bool(image_path))
+        content: Any = prompt
+        if image_path:  # OpenAI vision format (base64 data URI)
+            import base64
+
+            with open(image_path, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode()
+            content = [
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
+                {"type": "text", "text": prompt},
+            ]
         resp = self._client.chat.completions.create(
             model=self._model,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[{"role": "user", "content": content}],
             temperature=self._temperature,
             max_tokens=self._max_tokens,
         )
@@ -89,8 +109,9 @@ class OpenAIGeneratorReward:
         options: Dict[str, Any],
         evidence: List[Dict[str, Any]],
         gold_answer: str = "",
+        image_path: str = "",
     ) -> float:
-        out = self.generate(question, options, evidence)
+        out = self.generate(question, options, evidence, image_path=image_path)
         return self.utility_from_generation(out, gold_answer)
 
     def close(self) -> None: ...
@@ -102,7 +123,7 @@ class MockGeneratorReward:
     def __init__(self, cfg: Optional[Dict[str, Any]] = None):
         self.last_prediction = ""
 
-    def generate(self, question: str, options: Dict[str, Any], evidence: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def generate(self, question: str, options: Dict[str, Any], evidence: List[Dict[str, Any]], image_path: str = "") -> Dict[str, Any]:
         letters = sorted(options)
         pred = letters[1] if len(evidence) >= 2 and len(letters) > 1 else letters[0]
         self.last_prediction = pred
@@ -117,8 +138,9 @@ class MockGeneratorReward:
         options: Dict[str, Any],
         evidence: List[Dict[str, Any]],
         gold_answer: str = "",
+        image_path: str = "",
     ) -> float:
-        return self.utility_from_generation(self.generate(question, options, evidence), gold_answer)
+        return self.utility_from_generation(self.generate(question, options, evidence, image_path=image_path), gold_answer)
 
     def close(self) -> None: ...
 
