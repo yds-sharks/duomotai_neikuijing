@@ -1,0 +1,89 @@
+# 内窥镜 Agentic 项目 — Git 上传与更新日志
+
+> 本文件记录本仓库每一轮上传到 Git 的完整记录，以及每轮的更新与优化内容。
+> **记录规范**：每完成一轮开发/优化，在「更新记录」最上方追加一节；Git 提交推送后回填提交哈希。
+
+## 仓库信息
+- 远程：https://github.com/yds-sharks/duomotai_neikuijing.git
+- 分支：main
+- 本地路径：`/mnt/data_1/yds/多模态/内窥镜agentic`
+- 定位：医学多模态 RAG 全项目归档 + Agentic RAG 论文迭代主线仓库
+
+---
+
+## 更新记录
+
+### Round 2 — 2026-10-09：论文重构启动：基线盘点 + 本日志建立（进行中）
+**本轮目标**：论文全面调整前的三项准备——(1) 基座模型确认与 Qwen3.5 系列切换；(2) 训练数据构造链路梳理与重训；(3) 中央 Agent Harness（RAG 作为工具模块）搭建。
+
+**已完成**：
+- [x] 建立本日志文件（GIT_LOG.md）
+- [x] 基座模型盘点（结论见「基线状态快照」）
+- [x] 训练数据构造链路盘点（结论见「基线状态快照」）
+
+**待办**：
+- [ ] 生成器从 Qwen3-VL-8B-Instruct 切换至 Qwen3.5 系列（待确认目标型号/尺寸与部署方式）
+- [ ] 训练数据重构与重训（SFT → RFT/DPO → GRPO 全链路，基于新生成器重算 reward）
+- [ ] 中央 Agent Harness：RAG 检索/重排封装为工具模块，由中央 agent 大脑统一调度
+
+**提交**：`（本节提交后回填）`
+
+---
+
+### Round 1 — 2026-10-08：项目全量归档与首次上传 ✅
+| 提交 | 说明 |
+|---|---|
+| `1d4cb64` | init: 医学多模态RAG项目代码整理归档（625 文件 / 52M 入库，main 分支） |
+| `eb2d6d3` | docs: README 补充本归档仓库远程地址 |
+
+**内容**：工作区全部代码按流水线阶段分类为 `01_data_processing` ~ `09_legacy_deprecated` + `third_party`；数据/权重/实验结果通过 `.gitignore` 本地保留不入库；原工作目录只读未动；大数据（1.1T 语料、202G ckpt、23G milvus、53G 发布资产等）留在原位，对照表见 README。
+
+**插曲记录**：首版 .gitignore 误纳入 4 个 594M 的 pkl 与 legacy A 树自带 `.git`（gitlink）；已用 `git update-index --force-remove` 移出索引并 `git gc --prune=now` 清理对象库（.git 604M → 19M），fsck 无错误。
+
+---
+
+## 基线状态快照（2026-10-09 盘点）
+
+### 1. 基座模型现状
+| 角色 | 模型 | 位置/快照 | 状态 |
+|---|---|---|---|
+| **Agent 控制器**（策略，被训练对象） | **Qwen3.5-4B**（原生多模态，AutoModelForImageTextToText） | `/mnt/data_1/yds/models/hf_hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e8...` | 全参 FSDP SFT → DPO（起点 `ckpt_qwen35_ctrl_full_v1`）→ GRPO；FSDP wrap：`Qwen3_5DecoderLayer, Qwen3_5VisionBlock`；chat template 需 `enable_thinking=False` |
+| **答案生成器**（冻结，reward 定义来源） | Qwen3-VL-8B-Instruct | `/mnt/data_10/mwx/huggingface_cache/hub/models--Qwen--Qwen3-VL-8B-Instruct/snapshots/0c351dd0...` | 冻结；answer-utility `u(keep)=1[pred==gold]` 由其 logprobs 定义 |
+| 文本检索编码 | BGE-M3 | `.../BAAI/bge-m3` | 冻结 |
+| 图像检索编码 | Qwen3-VL-8B-Instruct（视觉塔） | 同生成器 | 冻结 |
+| 重排序 embedding | Qwen3-VL-Embedding-2B | `/mnt/data_1/yds/models/Qwen/Qwen3-VL-Embedding-2B` | 冻结 |
+
+**结论**：控制器（策略）已经是 Qwen3.5-4B；**尚未切换到 Qwen3.5 的是生成器**（现为 Qwen3-VL-8B-Instruct），以及可选的图像编码/重排序模型。Qwen3.5 系列切换方案需确定：目标型号与尺寸、原生多模态接口（`AutoModelForImageTextToText`）、reward 重算方式。
+
+### 2. 训练数据构造链路现状
+```
+题目/环境池（05_agentic_rag/agentic/data_construction/）
+  multimodal_samples.db 图文样本库
+    → 模板 MCQ 候选（build_agentic_mcq_dataset.py / build_agentic_image_mcq_dataset.py）
+    → schema + 泄漏校验（validate_agentic_mcq_dataset.py）
+    → gpt-5.4 API 校验过滤（verify_*_with_api.py）
+    → qa_gold_4000（4 类题型：病灶识别 / 操作识别 / 解剖部位 / 空间区域理解）
+  ⚠ EndoBench benchmark 样本全程 held-out，不作训练
+
+策略训练数据（05_agentic_rag/agentic/train/）
+  GPT 教师 agent 跑 Stage-2 轨迹（gpt_agent_adapter.py + rollouts_*.jsonl）
+  ├─ SFT  build_sft_from_trajectory.py：每轮轨迹 → 行为克隆样本
+  │       （system v11 提示 + 编号候选块 + query 图像 + 证据图像 → 教师 keep/drop、ACCEPT/REWRITE、rewrite_query JSON）
+  ├─ RFT  build_rft_dataset.py：Stage-D 奖励分层（rewrite-win / selection / trivial）按 u_set 选最优成员为目标
+  ├─ DPO  build_dpo_pairs.py：同状态候选 keep-action 按 u(keep)=1[pred==gold] 排序构成偏好对（teacher vs 更差）
+  └─ GRPO grpo_reward.py：在线 rollout + 生成器 logprobs 的 answer-utility 奖励
+```
+
+**重训注意**：若生成器切换为 Qwen3.5 系列，reward 定义（u_set / u(keep)）将整体变化，SFT/RFT/DPO 数据需用新生成器重算；qa_gold_4000 环境池可复用。
+
+---
+
+## 记录模板（复制到「更新记录」最上方使用）
+```markdown
+### Round N — YYYY-MM-DD：主题
+**本轮目标**：
+**完成**：
+**改动文件**：
+**提交**：`hash`（已推送）
+**备注/遗留问题**：
+```
