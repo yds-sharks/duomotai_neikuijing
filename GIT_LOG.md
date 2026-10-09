@@ -23,14 +23,20 @@
 - [x] 决策确定：全链路统一 **Qwen3.5-4B**（控制器 = 生成器 = 图像编码视觉塔，复用本地已有权重 `851bf6e8`，无需新下载）；文本检索保持 BGE-M3
 - [x] README 重构：由「四阶段流水线」改为「真实 Agent 场景」架构（中央 Agent 大脑 + RAG 工具模块 + answer-utility 奖励），新增「模型资产与复现指南」节（记录 HF 下载来源与本地路径，保证跨机器复现）；门控与重排序降级为消融基线
 - [x] 规划确认：后续通过 **OPD（Online Policy Distillation）** 内化模型学到的知识
+- [x] **中央 Agent Harness v0.1 搭建完成**（`10_harness/`，20 个文件）：
+  - 工具层 `tools/`：`text_retrieve`（BGE-M3）/ `image_retrieve`（视觉塔）/ `keep_evidence`（keep/drop）/ `submit_answer`（ACCEPT），统一 JSON 工具调用协议
+  - 大脑 `brain/agent_brain.py`：观察→决策→行动多轮循环，无效调用消耗预算可恢复，最终触发生成器作答并计算 answer-utility `u_set`
+  - 后端层 `backends/`：检索后端动态加载 v0.5 `FirstStageRetriever`（候选字段与训练链路一致）；大脑/生成器走 OpenAI 兼容 API（vLLM serve Qwen3.5-4B）；全部可注入 Mock
+  - 轨迹 `runtime/`：保留 v0.5 训练链路字段（`obs_candidates` 等）+ 新增 `rounds[]` 逐步记录；`run_harness.py` 批量出轨迹 jsonl + summary
+  - 设计要点：v0.5 的 ACCEPT/REWRITE 不再显式存在——REWRITE 退化为 agent 自主换 query 再检索，ACCEPT 即 submit；冒烟 `run_smoke.py` 全绿（工具分发/预算/跨轮去重/无效恢复/奖励）
 
 **待办**：
 - [ ] 执行生成器切换：修改 eval/grpo 的生成器配置指向 Qwen3.5-4B；如图像编码同步切换，重建图像向量索引
 - [ ] 训练数据重构与重训（SFT → RFT/DPO → GRPO 全链路，基于新生成器重算 reward）
-- [ ] 中央 Agent Harness：RAG 检索/重排封装为工具模块，由中央 agent 大脑统一调度
+- [ ] Harness v0.2：接真实后端（vLLM serve Qwen3.5-4B + Milvus）跑通 10 题 smoke，v0.3 EndoBench 批量评测对比 v0.5 pipeline
 - [ ] OPD 方法实现（在线策略蒸馏，内化教师/探索知识）
 
-**提交**：`0b51d3c` docs: 建立GIT_LOG更新日志(Round2基线盘点+Round1上传记录)（已推送）
+**提交**：`0b51d3c` 建立日志；`95f6724` 回填哈希；`7911f58` 架构重构+统一Qwen3.5-4B+模型复现指南；`<HARNESS_HASH>` 中央 Agent Harness v0.1（均已推送）
 
 ---
 

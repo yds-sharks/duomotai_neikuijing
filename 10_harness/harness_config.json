@@ -1,0 +1,50 @@
+{
+  "model": {
+    "hf_id": "Qwen/Qwen3.5-4B",
+    "hf_url": "https://huggingface.co/Qwen/Qwen3.5-4B",
+    "local_path": "/mnt/data_1/yds/models/hf_hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "enable_thinking": false
+  },
+  "brain": {
+    "backend": "openai",
+    "base_url": "http://127.0.0.1:8889/v1",
+    "api_key": "EMPTY",
+    "model": "/mnt/data_1/yds/models/hf_hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "max_tokens": 512,
+    "timeout": 120
+  },
+  "generator": {
+    "backend": "openai",
+    "base_url": "http://127.0.0.1:8889/v1",
+    "api_key": "EMPTY",
+    "model": "/mnt/data_1/yds/models/hf_hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "max_tokens": 512,
+    "logprobs": true,
+    "timeout": 120
+  },
+  "retrieval": {
+    "backend": "first_stage",
+    "milvus_db_path": "/mnt/data_1/yds/多模态/data_house/milvus/multimodal_vector_indexes.db",
+    "text_model_path": "/mnt/data_1/yds/RAG/Hybrid_milvus/总版/pretrained_models/BAAI/bge-m3",
+    "image_model_path": "/mnt/data_1/yds/models/hf_hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "text_device": "auto",
+    "image_device": "cuda",
+    "nprobe": 64,
+    "text_k": 20,
+    "image_k": 20,
+    "code_dir": "/mnt/data_1/yds/多模态/内窥镜agentic/05_agentic_rag/agentic/code"
+  },
+  "budget": {
+    "max_rounds": 3,
+    "max_tool_calls": 6,
+    "max_keep_per_round": 5,
+    "max_collected": 12
+  },
+  "paths": {
+    "output_dir": "/mnt/data_1/yds/多模态/内窥镜agentic/10_harness/runs"
+  }
+}
