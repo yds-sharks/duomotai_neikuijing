@@ -51,18 +51,16 @@ def render_generator_prompt(
         src = ev.get("source") or ev.get("origin") or "text"
         body = ev.get("text", "")
         ev_lines.append(f"[{i}] ({src}) {body}")
-    ev_block = "\n".join(ev_lines) if ev_lines else "(no evidence collected)"
+    ev_block = "\n".join(ev_lines) if ev_lines else "（未收集到证据）"
     img_note = (
-        "The query endoscopy image is attached as an image input — read it directly and "
-        "combine it with the evidence below.\n\n"
+        "题目的内镜图像已作为附图输入——请直接读图，并与下面的证据结合判断。\n\n"
         if image_attached
         else ""
     )
     return (
-        "You are a medical QA assistant. Answer the multiple-choice question using the "
-        "evidence below. Reply with the option letter only.\n\n"
+        "你是医学问答助手。请依据下方证据回答这道多选题，只回复正确选项的字母。\n\n"
         f"{img_note}"
-        f"Question: {question}\nOptions:\n{opt_lines}\n\nEvidence:\n{ev_block}\n\nAnswer:"
+        f"问题: {question}\n选项:\n{opt_lines}\n\n证据:\n{ev_block}\n\n答案:"
     )
 
 

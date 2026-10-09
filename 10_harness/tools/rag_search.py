@@ -17,12 +17,10 @@ from tools.base import Tool, ToolResult
 class RagSearchTool(Tool):
     name = "rag_search"
     description = (
-        "Run the complete RAG pipeline on a query: dual-path retrieval (text + question "
-        "image) followed by internal evidence selection. Returns the final evidence "
-        "passages, already merged into the session's evidence set. Rephrase the query "
-        "and call again if the evidence is insufficient."
+        "对一条 query 运行完整 RAG 管道：双路检索（文本 + 题目图像）+ 内部证据筛选。"
+        "返回最终证据文段，并已并入会话证据集。证据不足时请改写 query 再次调用。"
     )
-    args_schema = '{"query": str, "use_image": bool?}  # use_image defaults to true when the question has an image'
+    args_schema = '{"query": str, "use_image": bool?}  # 题目有图时 use_image 默认为 true'
 
     def run(self, session, args: Dict[str, Any]) -> ToolResult:
         query = str(args.get("query", "")).strip()
@@ -36,16 +34,16 @@ class RagSearchTool(Tool):
             options=session.options,
         )
         added, dup = session.add_evidence(kept)
-        repeat = " (WARNING: query already used before)" if query in session.search_history else ""
+        repeat = "（警告：该 query 与之前重复）" if query in session.search_history else ""
         session.log_search(query)
         return ToolResult(
             ok=True,
             candidates=kept,  # this round's final passages (what the brain reviews)
             n_new=added,
             message=(
-                f"rag_search ok: {len(kept)} passages returned, +{added} new evidence"
-                + (f", {dup} duplicates skipped" if dup else "")
-                + ("" if use_image or not session.query_image_path else "; image NOT used")
+                f"rag_search 完成：返回 {len(kept)} 条文段，新增 {added} 条证据"
+                + (f"，跳过 {dup} 条重复" if dup else "")
+                + ("" if use_image or not session.query_image_path else "；未使用图像")
                 + repeat
             ),
         )

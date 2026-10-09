@@ -65,11 +65,10 @@ class AgentEvidenceFilter:
             text = (h.get("text", "") or "").strip().replace("\n", " ")[: self.text_chars]
             lines.append(f"[{i}] {text}")
         system = (
-            "You select evidence for a medical MCQ. Given the question and numbered "
-            "candidate passages, return the numbers of passages that could change the "
-            "answer. Reply EXACTLY one JSON object: {\"keep\": [int, ...]}"
+            "你是多选题的证据筛选器。给定问题和编号的候选文段，返回可能改变答案的"
+            "文段编号。只回复一个 JSON 对象：{\"keep\": [int, ...]}"
         )
-        user = f"Question: {question}\nOptions: {opt_s}\n\nCandidates:\n" + "\n".join(lines)
+        user = f"问题: {question}\n选项: {opt_s}\n\n候选文段:\n" + "\n".join(lines)
         out = self.llm.decide([{"role": "system", "content": system}, {"role": "user", "content": user}])
         raw = out.get("keep", [])
         if not isinstance(raw, list):

@@ -11,20 +11,16 @@ from tools.base import Tool, ToolResult
 class SubmitAnswerTool(Tool):
     name = "submit_answer"
     description = (
-        "Finish the episode: the accumulated evidence set is sent to the generator, "
-        "which produces the final answer. Call this when the evidence is sufficient "
-        "or the budget is nearly exhausted."
+        "结束本回合：已积累的证据集将交给生成器产生最终答案。"
+        "证据足够或预算将尽时调用。"
     )
-    args_schema = "{}  # no arguments"
+    args_schema = "{}  # 无参数"
 
     def run(self, session, args: Dict[str, Any]) -> ToolResult:
         session.mark_submit()
         return ToolResult(
             ok=True,
             candidates=session.last_passages,
-            message=(
-                f"submit_answer accepted with {len(session.collected)} evidence items; "
-                "generator will answer now"
-            ),
+            message=f"submit_answer 已接受，共 {len(session.collected)} 条证据；生成器即将作答",
             finish=True,
         )

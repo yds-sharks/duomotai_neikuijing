@@ -18,27 +18,22 @@ MAX_HISTORY_SHOWN = 6
 def build_system_prompt(tool_specs: List[Dict[str, str]]) -> str:
     tools_block = "\n".join(f"- {s['name']}: {s['description']} | args: {s['args']}" for s in tool_specs)
     return (
-        "You are the central brain of a medical multimodal RAG system (endoscopy QA).\n"
-        "The query endoscopy image is attached to each message when present — read it "
-        "directly; it is often decisive for visual questions (organ identification, "
-        "lesion description, finding localization).\n"
-        "You do NOT answer from memory and you do NOT manage evidence yourself: a single "
-        "tool, rag_search, runs the whole RAG pipeline and returns curated passages. Your "
-        "job is query planning: craft the best search query, decide whether to search "
-        "again (rephrased), and decide when the evidence suffices. The generator answers "
-        "ONLY from the accumulated evidence set.\n\n"
-        "TOOLS\n" + tools_block + "\n\n"
-        "PROTOCOL\n"
-        "Each turn reply with EXACTLY ONE JSON object and nothing else:\n"
-        '{"thought": "<brief reasoning>", "tool": "<tool name>", "args": {...}}\n\n'
-        "POLICY\n"
-        "1. Typically call rag_search first. The corpus is CHINESE medical documents — "
-        "write the search query IN CHINESE (base it on the RETRIEVAL HINT and what you "
-        "see in the image). The question image is searched automatically when present.\n"
-        "2. Review the returned passages: if they likely change the answer, or the evidence "
-        "already covers the question, submit. Otherwise call rag_search again with a "
-        "REPHRASED, more specific query in Chinese (never repeat a previous query verbatim).\n"
-        "3. Budget is tight: with few calls left, prefer submitting over exploring.\n"
+        "你是一个多模态医学 RAG 系统（内镜问答）的中央大脑。\n"
+        "每条消息会附带题目的内镜图像（若有）——请直接读图；对视觉类问题（器官识别、"
+        "病灶描述、病变定位）图像往往是决定性的。\n"
+        "你不要凭记忆作答，也不亲自管理证据：唯一工具 rag_search 会运行完整 RAG 管道"
+        "并返回筛选后的文段。你的职责是查询规划：构造最佳检索 query、决定是否换一种"
+        "问法再检索、判断证据是否足够。生成器只依据已积累的证据集作答。\n\n"
+        "可用工具\n" + tools_block + "\n\n"
+        "协议\n"
+        "每轮只回复一个 JSON 对象，不要输出其他任何内容：\n"
+        '{"thought": "<简要推理>", "tool": "<工具名>", "args": {...}}\n\n'
+        "策略\n"
+        "1. 通常先调用 rag_search。检索语料是中文医学文献——query 必须用中文写"
+        "（依据检索提示和图像所见来构造）。题目图像（若有）会自动参与检索。\n"
+        "2. 审阅返回的文段：若很可能改变答案、或证据已覆盖问题，就调用 submit_answer；"
+        "否则用更具体的中文改写 query 再次 rag_search（不要与之前的 query 逐字重复）。\n"
+        "3. 预算紧张：剩余调用很少时，优先提交而不是继续探索。\n"
     )
 
 
@@ -49,7 +44,7 @@ def _preview(text: str, limit: int = MAX_TEXT_CHARS) -> str:
 
 def render_passages(passages: List[Dict[str, Any]]) -> str:
     if not passages:
-        return "(no passages returned this call)"
+        return "（本次调用未返回文段）"
     lines = []
     for i, p in enumerate(passages[:MAX_PASSAGE_SHOWN], 1):
         origin = p.get("origin", p.get("source", "?"))
@@ -57,7 +52,7 @@ def render_passages(passages: List[Dict[str, Any]]) -> str:
         score_s = f"{score:.3f}" if isinstance(score, (int, float)) else str(score)
         lines.append(f"[{i}] ({origin}, score={score_s}) {_preview(p.get('text', ''))}")
     if len(passages) > MAX_PASSAGE_SHOWN:
-        lines.append(f"... (+{len(passages) - MAX_PASSAGE_SHOWN} more)")
+        lines.append(f"...（另有 {len(passages) - MAX_PASSAGE_SHOWN} 条未展示）")
     return "\n".join(lines)
 
 
@@ -75,26 +70,25 @@ def render_state_message(
     final_round: bool = False,
 ) -> str:
     history = search_history[-MAX_HISTORY_SHOWN:]
-    history_block = "\n".join(f"  - {h}" for h in history) if history else "  (none yet)"
+    history_block = "\n".join(f"  - {h}" for h in history) if history else "  （尚无检索）"
     hint = (
-        f"RETRIEVAL HINT (Chinese translation of the question — write your rag_search "
-        f"query IN CHINESE, rephrasing this hint plus the findings you see in the image): {retrieval_hint}\n\n"
+        f"检索提示（题目的中文翻译——请用中文写 rag_search 的 query，可结合本提示与图像所见改写）：{retrieval_hint}\n\n"
         if retrieval_hint
         else ""
     )
     msg = (
-        f"TOOL FEEDBACK: {last_tool or '(start)'} -> {last_message or 'FIRST ROUND: no search has run yet — plan your first rag_search query.'}\n\n"
+        f"上轮工具反馈: {last_tool or '（开始）'} -> {last_message or '第一轮：尚未检索——请规划你的第一次 rag_search 查询。'}\n\n"
         f"{hint}"
-        f"PASSAGES RETURNED BY LAST rag_search:\n{render_passages(passages)}\n\n"
-        f"EVIDENCE SET: {len(collected)} passage(s) accumulated across all searches\n"
-        f"SEARCH HISTORY (do not repeat):\n{history_block}\n\n"
-        f"BUDGET: round {rounds_used + 1}/{max_rounds}, tool calls {tool_calls_used}/{max_tool_calls}.\n"
-        "Reply with ONE JSON object: {\"thought\": ..., \"tool\": ..., \"args\": {...}}"
+        f"上次 rag_search 返回的文段:\n{render_passages(passages)}\n\n"
+        f"证据集: 已累计 {len(collected)} 条文段\n"
+        f"检索历史（不要重复）:\n{history_block}\n\n"
+        f"预算: 第 {rounds_used + 1}/{max_rounds} 轮，工具调用 {tool_calls_used}/{max_tool_calls} 次。\n"
+        '只回复一个 JSON 对象: {"thought": ..., "tool": ..., "args": {...}}'
     )
     if collected:
-        msg += "\nEvidence is available: submit_answer if it covers the question, else search again with a rephrased Chinese query."
+        msg += "\n已有证据：若足以覆盖问题请 submit_answer，否则用中文改写 query 再检索。"
     if final_round:
-        msg += "\nFINAL ROUND: this is your LAST move — call submit_answer NOW with the evidence you have. Searching further is pointless."
+        msg += "\n最后一轮：这是你最后一次行动——立即 submit_answer，用现有证据作答。继续检索没有意义。"
     return msg
 
 
