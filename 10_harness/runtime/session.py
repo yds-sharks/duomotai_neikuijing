@@ -1,41 +1,39 @@
 #!/usr/bin/env python3
-"""AgentSession: per-question state of the agent episode (candidates, evidence, budget)."""
+"""AgentSession: per-question state of the agent episode.
+
+Simplified single-tool contract: the brain calls rag_search (full RAG pipeline)
+and submit_answer; the session only accumulates final passages, the search
+breadcrumb, and the budget.
+"""
 
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
 
-from backends.retrieval_backend import RetrievalBackend
+from backends.rag_backend import RagPipelineBackend
 from prompts.brain_prompt import candidate_identity
 
 
 class AgentSession:
-    """Holds everything the tools and the brain need for ONE question.
-
-    Numbering contract: `last_candidates` is re-numbered 1..N each retrieval round
-    (fields harness_no / harness_round); keep_evidence refers to these numbers.
-    Cross-round dedup uses candidate_identity().
-    """
-
     def __init__(
         self,
         config: Dict[str, Any],
-        retrieval: RetrievalBackend,
+        rag: RagPipelineBackend,
         qid: str = "",
         question: str = "",
         options: Optional[Dict[str, Any]] = None,
         query_image_path: str = "",
     ):
         self.config = config
-        self.retrieval = retrieval
+        self.rag = rag
         self.qid = qid
         self.question = question
         self.options = options or {}
         self.query_image_path = query_image_path
 
-        self.collected: List[Dict[str, Any]] = []
+        self.collected: List[Dict[str, Any]] = []  # accumulated final passages across rag_search calls
         self._collected_ids: set = set()
-        self.last_candidates: List[Dict[str, Any]] = []
+        self.last_passages: List[Dict[str, Any]] = []  # passages returned by the latest rag_search
         self.search_history: List[str] = []
 
         budget = config.get("budget", {})
@@ -48,46 +46,23 @@ class AgentSession:
         self.submitted = False
 
     # ------------------------------------------------------------------ tools API
-    def register_candidates(self, hits: List[Dict[str, Any]], origin: str, query: str) -> int:
-        """Set this round's candidate list (renumbered), skipping already-collected items."""
-        fresh: List[Dict[str, Any]] = []
-        for h in hits:
-            item = dict(h)
-            item.setdefault("origin", origin)
-            item.setdefault("source", item.get("origin", origin))
+    def add_evidence(self, passages: List[Dict[str, Any]]) -> Tuple[int, int]:
+        """Merge rag_search output into the evidence set. Returns (n_added, n_duplicates)."""
+        added = dup = 0
+        for p in passages:
+            item = dict(p)
             cid = candidate_identity(item)
             if cid in self._collected_ids:
-                continue
-            fresh.append(item)
-        numbered: List[Dict[str, Any]] = []
-        for i, item in enumerate(fresh, 1):
-            item["harness_no"] = i
-            item["harness_round"] = self.rounds_used
-            item["harness_query"] = query
-            numbered.append(item)
-        self.last_candidates = numbered
-        return len(numbered)
-
-    def keep_from_candidates(self, numbers: List[int]) -> Tuple[int, List[int]]:
-        """Move selected candidates into the collected set. Returns (n_added, unknown_numbers)."""
-        by_no = {c.get("harness_no"): c for c in self.last_candidates}
-        added, unknown = 0, []
-        for n in numbers:
-            item = by_no.get(n)
-            if item is None:
-                unknown.append(n)
-                continue
-            cid = candidate_identity(item)
-            if cid in self._collected_ids:
+                dup += 1
                 continue
             if len(self.collected) >= self.max_collected:
                 break
-            item = dict(item)
             item["kept_at_round"] = self.rounds_used
             self.collected.append(item)
             self._collected_ids.add(cid)
             added += 1
-        return added, unknown
+        self.last_passages = [dict(p) for p in passages]
+        return added, dup
 
     def log_search(self, query: str) -> None:
         self.search_history.append(query)

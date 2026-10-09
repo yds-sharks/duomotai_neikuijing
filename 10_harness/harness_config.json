@@ -38,10 +38,25 @@
     "image_k": 20,
     "code_dir": "/mnt/data_1/yds/多模态/内窥镜agentic/05_agentic_rag/agentic/code"
   },
+  "rag": {
+    "evidence_filter": {
+      "backend": "agent",
+      "max_keep": 5,
+      "llm": {
+        "backend": "openai",
+        "base_url": "http://127.0.0.1:8889/v1",
+        "api_key": "EMPTY",
+        "model": "/mnt/data_1/yds/models/hf_hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "max_tokens": 256,
+        "timeout": 120
+      }
+    }
+  },
   "budget": {
     "max_rounds": 3,
     "max_tool_calls": 6,
-    "max_keep_per_round": 5,
     "max_collected": 12
   },
   "paths": {

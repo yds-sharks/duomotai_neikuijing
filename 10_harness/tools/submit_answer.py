@@ -21,7 +21,7 @@ class SubmitAnswerTool(Tool):
         session.mark_submit()
         return ToolResult(
             ok=True,
-            candidates=session.last_candidates,
+            candidates=session.last_passages,
             message=(
                 f"submit_answer accepted with {len(session.collected)} evidence items; "
                 "generator will answer now"

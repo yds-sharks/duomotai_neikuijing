@@ -30,13 +30,15 @@
   - 轨迹 `runtime/`：保留 v0.5 训练链路字段（`obs_candidates` 等）+ 新增 `rounds[]` 逐步记录；`run_harness.py` 批量出轨迹 jsonl + summary
   - 设计要点：v0.5 的 ACCEPT/REWRITE 不再显式存在——REWRITE 退化为 agent 自主换 query 再检索，ACCEPT 即 submit；冒烟 `run_smoke.py` 全绿（工具分发/预算/跨轮去重/无效恢复/奖励）
 
+- [x] **工具粒度反转（用户反馈）**：完整 RAG 封装为**单一工具** `rag_search`（输入 query → 直接输出筛选后文段），原四工具细粒度设计废弃；v0.5 的证据选择 agent 下沉为 RAG 工具内部处理（`AgentEvidenceFilter`，失败回落 TopK）；大脑行为空间精简为 `rag_search` + `submit_answer` 两个动作，只负责查询规划；仓库根 README 与 10_harness README 架构图同步更新
+
 **待办**：
 - [ ] 执行生成器切换：修改 eval/grpo 的生成器配置指向 Qwen3.5-4B；如图像编码同步切换，重建图像向量索引
 - [ ] 训练数据重构与重训（SFT → RFT/DPO → GRPO 全链路，基于新生成器重算 reward）
 - [ ] Harness v0.2：接真实后端（vLLM serve Qwen3.5-4B + Milvus）跑通 10 题 smoke，v0.3 EndoBench 批量评测对比 v0.5 pipeline
 - [ ] OPD 方法实现（在线策略蒸馏，内化教师/探索知识）
 
-**提交**：`0b51d3c` 建立日志；`95f6724` 回填哈希；`7911f58` 架构重构+统一Qwen3.5-4B+模型复现指南；`1fa91d3` 中央 Agent Harness v0.1（均已推送）
+**提交**：`0b51d3c` 建立日志；`95f6724` 回填哈希；`7911f58` 架构重构+统一Qwen3.5-4B+模型复现指南；`1fa91d3` 中央 Agent Harness v0.1；`<SINGLE_TOOL_HASH>` 工具粒度反转：单一 rag_search（均已推送）
 
 ---
 

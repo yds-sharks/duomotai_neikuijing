@@ -12,7 +12,7 @@ import json
 import traceback
 from typing import Any, Dict, List, Optional
 
-from backends.retrieval_backend import RetrievalBackend
+from backends.rag_backend import RagPipelineBackend
 from backends.llm_backend import BrainBackend
 from backends.reward_backend import RewardBackend
 from prompts.brain_prompt import build_system_prompt, render_state_message
@@ -25,13 +25,13 @@ class AgentBrain:
     def __init__(
         self,
         config: Dict[str, Any],
-        retrieval: RetrievalBackend,
+        rag: RagPipelineBackend,
         brain: BrainBackend,
         reward: RewardBackend,
         registry: Optional[ToolRegistry] = None,
     ):
         self.config = config
-        self._retrieval = retrieval
+        self._rag = rag
         self.brain = brain
         self.reward = reward
         self.registry = registry or default_registry()
@@ -42,7 +42,7 @@ class AgentBrain:
         """Run one question end-to-end; returns a v0.5-compatible trajectory dict."""
         session = AgentSession(
             config=self.config,
-            retrieval=self._retrieval,
+            rag=self._rag,
             qid=str(item.get("qid", "")),
             question=str(item.get("question", item.get("query_text", ""))),
             options=dict(item.get("options", {}) or {}),
@@ -55,7 +55,7 @@ class AgentBrain:
             state_msg = render_state_message(
                 last_tool=rounds[-1].call.tool if rounds else "",
                 last_message=rounds[-1].observation.message if rounds else "",
-                candidates=session.last_candidates,
+                passages=session.last_passages,
                 collected=session.collected,
                 search_history=session.search_history,
                 rounds_used=session.rounds_used,

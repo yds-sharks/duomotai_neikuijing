@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-from backends.retrieval_backend import MockRetrievalBackend, RetrievalBackend, load_first_stage_retriever
+from backends.rag_backend import RagPipelineBackend, build_rag_pipeline
 from backends.llm_backend import build_brain
 from backends.reward_backend import build_reward
 from brain.agent_brain import AgentBrain
@@ -18,7 +18,7 @@ class HarnessRunner:
     def __init__(self, config: Dict[str, Any], mock: bool = False):
         self.config = config
         self.mock = mock
-        self.retrieval = self._build_retrieval()
+        self.rag = build_rag_pipeline(config, mock=mock)
         brain_cfg = dict(config.get("brain", {}))
         if mock:
             brain_cfg = dict(brain_cfg, backend="mock")  # runner callers inject scripted brains directly
@@ -28,15 +28,10 @@ class HarnessRunner:
             reward_cfg = dict(reward_cfg, backend="mock")
         self.reward = build_reward(reward_cfg)
 
-    def _build_retrieval(self) -> RetrievalBackend:
-        if self.mock:
-            return MockRetrievalBackend()
-        return load_first_stage_retriever(self.config)
-
     def make_agent(self, brain_backend=None) -> AgentBrain:
         return AgentBrain(
             config=self.config,
-            retrieval=self.retrieval,
+            rag=self.rag,
             brain=brain_backend or self.brain,
             reward=self.reward,
         )
@@ -74,7 +69,7 @@ class HarnessRunner:
         return results
 
     def close(self) -> None:
-        self.retrieval.close()
+        self.rag.close()
         self.brain.close()
         self.reward.close()
 
