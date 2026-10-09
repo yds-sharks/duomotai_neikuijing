@@ -36,7 +36,7 @@
 - [ ] Harness v0.2：接真实后端（vLLM serve Qwen3.5-4B + Milvus）跑通 10 题 smoke，v0.3 EndoBench 批量评测对比 v0.5 pipeline
 - [ ] OPD 方法实现（在线策略蒸馏，内化教师/探索知识）
 
-**提交**：`0b51d3c` 建立日志；`95f6724` 回填哈希；`7911f58` 架构重构+统一Qwen3.5-4B+模型复现指南；`<HARNESS_HASH>` 中央 Agent Harness v0.1（均已推送）
+**提交**：`0b51d3c` 建立日志；`95f6724` 回填哈希；`7911f58` 架构重构+统一Qwen3.5-4B+模型复现指南；`1fa91d3` 中央 Agent Harness v0.1（均已推送）
 
 ---
 
