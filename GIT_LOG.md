@@ -42,15 +42,17 @@
   - `transformers_backend.py`：`chat/decide/generate/answer_utility` 全部增加 `image_path` 参数，最后一条 user 消息转多模态 content；
   - `reward_backend.py`/`llm_backend.py`：Protocol 与全部实现同步签名；OpenAI 后端走 base64 data URI 视觉格式（vLLM serve 后直接可用）；
   - `brain_prompt.py`：系统提示明示图像附在每条消息中；首轮反馈文案改为显式 "FIRST ROUND"（修复大脑误读为“上次检索无结果”）。
-  - **新暴露问题（v0.2.2 待办）**：末轮大脑倾向继续搜索而非提交（2/10 budget_exhausted，虽 generator 兜底答案仍计分且均答对）——末轮提示强制提交可修复。
+  - **新暴露问题（v0.2.2 待办）**：末轮大脑倾向继续搜索而非提交（2/10 budget_exhausted，虽 generator 兑底答案仍计分且均答对）——末轮提示强制提交可修复。
+
+- [x] **Harness v0.2.2 中文 query + 末轮强制提交**：检索语料为中文而大脑生成英文 query，召回质量受限；改为 POLICY 强制中文 query（基于 RETRIEVAL HINT + 图像所见改写）。效果：单轮新增证据从常为 +1 提升至 +4/+5（召回明显改善）；submit_rate 0.8 → 1.0（末轮 FINAL ROUND 提示生效，无 budget_exhausted）；正确率 3/10 持平（±2 题波动，10 题样本噪声范围内；新对 eb_1/eb_5，翻错 eb_4/eb_8）。**瓶颈转移结论**：检索侧已收敛（每题稳定积累 4-5 条证据），当前瓶颈在 4B 模型对 Organ Identification 看图题的视觉判别力——需扩大样本（v0.3）或回主线训练。落地：`brain_prompt.py` POLICY 中文要求 + RETRIEVAL HINT 文案强化 + `final_round` 参数；`agent_brain.py` 传入末轮标志。
 
 **待办**：
 - [ ] 执行生成器切换：修改 eval/grpo 的生成器配置指向 Qwen3.5-4B；如图像编码同步切换，重建图像向量索引
 - [ ] 训练数据重构与重训（SFT → RFT/DPO → GRPO 全链路，基于新生成器重算 reward）
-- [ ] Harness v0.2.2：末轮强制提交提示（budget_exhausted 题 2/10）；随后 Harness v0.3：EndoBench 批量评测（50-100 题）+ 与 v0.5 pipeline 对照
+- [ ] Harness v0.3：EndoBench 批量评测（50-100 题，全量中文翻译缓存 6832 条已就绪）+ 与 v0.5 pipeline 对照
 - [ ] OPD 方法实现（在线策略蒸馏，内化教师/探索知识）
 
-**提交**：`0b51d3c` 建立日志；`95f6724` 回填哈希；`7911f58` 架构重构+统一Qwen3.5-4B+模型复现指南；`1fa91d3` 中央 Agent Harness v0.1；`db6f56b` 工具粒度反转：单一 rag_search；`bde0f7c` v0.2 真实链路冒烟；`22b2277` v0.2.1 图像输入修复（均已推送）
+**提交**：`0b51d3c` 建立日志；`95f6724` 回填哈希；`7911f58` 架构重构+统一Qwen3.5-4B+模型复现指南；`1fa91d3` 中央 Agent Harness v0.1；`db6f56b` 工具粒度反转：单一 rag_search；`bde0f7c` v0.2 真实链路冒烟；`22b2277` v0.2.1 图像输入修复；`<V022_HASH>` v0.2.2 中文query+末轮提交（均已推送）
 
 ---
 

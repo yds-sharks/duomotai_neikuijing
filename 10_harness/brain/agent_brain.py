@@ -64,6 +64,7 @@ class AgentBrain:
                 max_rounds=session.max_rounds,
                 max_tool_calls=session.max_tool_calls,
                 retrieval_hint=session.retrieval_hint,
+                final_round=(session.rounds_used + 1) >= session.max_rounds,
             )
             call, raw_text = self._decide(state_msg, session.query_image_path)
             result = self._execute(session, call)

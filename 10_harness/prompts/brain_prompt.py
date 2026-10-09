@@ -32,11 +32,12 @@ def build_system_prompt(tool_specs: List[Dict[str, str]]) -> str:
         "Each turn reply with EXACTLY ONE JSON object and nothing else:\n"
         '{"thought": "<brief reasoning>", "tool": "<tool name>", "args": {...}}\n\n'
         "POLICY\n"
-        "1. Typically call rag_search first with a specific, information-dense query; the "
-        "question image is searched automatically when present.\n"
+        "1. Typically call rag_search first. The corpus is CHINESE medical documents — "
+        "write the search query IN CHINESE (base it on the RETRIEVAL HINT and what you "
+        "see in the image). The question image is searched automatically when present.\n"
         "2. Review the returned passages: if they likely change the answer, or the evidence "
         "already covers the question, submit. Otherwise call rag_search again with a "
-        "REPHRASED, more specific query (never repeat a previous query verbatim).\n"
+        "REPHRASED, more specific query in Chinese (never repeat a previous query verbatim).\n"
         "3. Budget is tight: with few calls left, prefer submitting over exploring.\n"
     )
 
@@ -71,12 +72,13 @@ def render_state_message(
     max_rounds: int,
     max_tool_calls: int,
     retrieval_hint: str = "",
+    final_round: bool = False,
 ) -> str:
     history = search_history[-MAX_HISTORY_SHOWN:]
     history_block = "\n".join(f"  - {h}" for h in history) if history else "  (none yet)"
     hint = (
-        f"RETRIEVAL HINT (zh translation of the question; the corpus is Chinese — base your "
-        f"search query on it): {retrieval_hint}\n\n"
+        f"RETRIEVAL HINT (Chinese translation of the question — write your rag_search "
+        f"query IN CHINESE, rephrasing this hint plus the findings you see in the image): {retrieval_hint}\n\n"
         if retrieval_hint
         else ""
     )
@@ -90,7 +92,9 @@ def render_state_message(
         "Reply with ONE JSON object: {\"thought\": ..., \"tool\": ..., \"args\": {...}}"
     )
     if collected:
-        msg += "\nEvidence is available: submit_answer if it covers the question, else search again with a rephrased query."
+        msg += "\nEvidence is available: submit_answer if it covers the question, else search again with a rephrased Chinese query."
+    if final_round:
+        msg += "\nFINAL ROUND: this is your LAST move — call submit_answer NOW with the evidence you have. Searching further is pointless."
     return msg
 
 
