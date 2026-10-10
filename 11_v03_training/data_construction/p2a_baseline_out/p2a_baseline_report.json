@@ -1,0 +1,166 @@
+{
+  "overall": {
+    "n": 480,
+    "correct": 186,
+    "acc": 0.3875
+  },
+  "by_task": {
+    "Instrument Management": {
+      "n": 40,
+      "correct": 26,
+      "acc": 0.65,
+      "logp_gold_median": -0.556
+    },
+    "Landmark Identification": {
+      "n": 40,
+      "correct": 19,
+      "acc": 0.475,
+      "logp_gold_median": -0.945
+    },
+    "Lesion Quantification": {
+      "n": 40,
+      "correct": 7,
+      "acc": 0.175,
+      "logp_gold_median": -2.565
+    },
+    "Lesion Severity Grading": {
+      "n": 40,
+      "correct": 7,
+      "acc": 0.175,
+      "logp_gold_median": -2.587
+    },
+    "Lesion Type Identification": {
+      "n": 40,
+      "correct": 12,
+      "acc": 0.3,
+      "logp_gold_median": -1.809
+    },
+    "Macro Phases Identification": {
+      "n": 40,
+      "correct": 11,
+      "acc": 0.275,
+      "logp_gold_median": -1.356
+    },
+    "Micro Operation Analysis": {
+      "n": 40,
+      "correct": 19,
+      "acc": 0.475,
+      "logp_gold_median": -0.901
+    },
+    "Organ Identification": {
+      "n": 40,
+      "correct": 11,
+      "acc": 0.275,
+      "logp_gold_median": -1.797
+    },
+    "Preoperative Assessment": {
+      "n": 40,
+      "correct": 26,
+      "acc": 0.65,
+      "logp_gold_median": -0.429
+    },
+    "Region Recognition": {
+      "n": 40,
+      "correct": 13,
+      "acc": 0.325,
+      "logp_gold_median": -1.204
+    },
+    "Region Selection": {
+      "n": 40,
+      "correct": 23,
+      "acc": 0.575,
+      "logp_gold_median": -0.434
+    },
+    "Visual Grounding": {
+      "n": 40,
+      "correct": 12,
+      "acc": 0.3,
+      "logp_gold_median": -1.296
+    }
+  },
+  "by_category": {
+    "Anatomical Structure Recognition": {
+      "n": 80,
+      "correct": 30,
+      "acc": 0.375,
+      "logp_gold_median": -1.423
+    },
+    "Lesion Analysis and Grading": {
+      "n": 120,
+      "correct": 26,
+      "acc": 0.2167,
+      "logp_gold_median": -2.415
+    },
+    "Spatial Localization and Region Understanding": {
+      "n": 120,
+      "correct": 48,
+      "acc": 0.4,
+      "logp_gold_median": -1.165
+    },
+    "Surgical Workflow and Operation Analysis": {
+      "n": 160,
+      "correct": 82,
+      "acc": 0.5125,
+      "logp_gold_median": -0.855
+    }
+  },
+  "by_scene": {
+    "Capsule Endoscopy": {
+      "n": 94,
+      "correct": 30,
+      "acc": 0.3191,
+      "logp_gold_median": -1.486
+    },
+    "Colonoscopy": {
+      "n": 182,
+      "correct": 71,
+      "acc": 0.3901,
+      "logp_gold_median": -1.451
+    },
+    "Gastroscopy": {
+      "n": 31,
+      "correct": 11,
+      "acc": 0.3548,
+      "logp_gold_median": -1.421
+    },
+    "Surgical Endoscopy": {
+      "n": 173,
+      "correct": 74,
+      "acc": 0.4277,
+      "logp_gold_median": -1.059
+    }
+  },
+  "by_n_options": {
+    "2": {
+      "n": 54,
+      "correct": 36,
+      "acc": 0.6667,
+      "logp_gold_median": -0.429
+    },
+    "4": {
+      "n": 341,
+      "correct": 135,
+      "acc": 0.3959,
+      "logp_gold_median": -1.19
+    },
+    "5": {
+      "n": 5,
+      "correct": 1,
+      "acc": 0.2,
+      "logp_gold_median": -2.086
+    },
+    "6": {
+      "n": 80,
+      "correct": 14,
+      "acc": 0.175,
+      "logp_gold_median": -2.569
+    }
+  },
+  "config": {
+    "queries": "../../10_harness/runs/queries_endobench_full.jsonl",
+    "seed": 0,
+    "per_task": 40,
+    "elapsed_seconds": 207.2
+  },
+  "n_errors": 0
+}

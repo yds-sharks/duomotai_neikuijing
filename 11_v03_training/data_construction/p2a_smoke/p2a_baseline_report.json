@@ -1,0 +1,46 @@
+{
+  "overall": {
+    "n": 3,
+    "correct": 0,
+    "acc": 0.0
+  },
+  "by_task": {
+    "Organ Identification": {
+      "n": 3,
+      "correct": 0,
+      "acc": 0.0,
+      "logp_gold_median": -1.987
+    }
+  },
+  "by_category": {
+    "Anatomical Structure Recognition": {
+      "n": 3,
+      "correct": 0,
+      "acc": 0.0,
+      "logp_gold_median": -1.987
+    }
+  },
+  "by_scene": {
+    "Capsule Endoscopy": {
+      "n": 3,
+      "correct": 0,
+      "acc": 0.0,
+      "logp_gold_median": -1.987
+    }
+  },
+  "by_n_options": {
+    "4": {
+      "n": 3,
+      "correct": 0,
+      "acc": 0.0,
+      "logp_gold_median": -1.987
+    }
+  },
+  "config": {
+    "queries": "../../10_harness/runs/queries_endobench_full.jsonl",
+    "seed": 0,
+    "per_task": 40,
+    "elapsed_seconds": 2.2
+  },
+  "n_errors": 0
+}
