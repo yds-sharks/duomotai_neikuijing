@@ -1,0 +1,45 @@
+{
+  "n_questions": 3,
+  "supported_questions": 2,
+  "support_rate": 0.6667,
+  "questions_with_harmful": 2,
+  "thresholds": {
+    "tau_pos": 0.2,
+    "tau_neg": -0.2
+  },
+  "by_query_type": {
+    "image_organ_identification": {
+      "n": 2,
+      "supported": 1,
+      "rate": 0.5
+    },
+    "image_content_type_identification": {
+      "n": 1,
+      "supported": 1,
+      "rate": 1.0
+    }
+  },
+  "pos_n_distribution": {
+    "0": 1,
+    "13": 1,
+    "18": 1
+  },
+  "max_u_stats": {
+    "mean": 1.0931,
+    "median": 1.0946
+  },
+  "avg_pool_n": 20.0,
+  "base_correct_rate": 0.3333,
+  "config": {
+    "questions": "/mnt/data_1/yds/多模态/rerank_image_and_text/agentic/outputs/mcq_image_v2_4000/train.jsonl",
+    "sample_seed": 0,
+    "text_k": 8,
+    "image_k": 4,
+    "overfetch_k": 40,
+    "evidence_max_chars": 400,
+    "generator_device": "cuda:0"
+  },
+  "elapsed_seconds": 132.1,
+  "decision_hint": "proceed_p2（比例健康，按原计划进入 P2 题库重建）",
+  "n_errors": 0
+}

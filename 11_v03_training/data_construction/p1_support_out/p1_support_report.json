@@ -1,0 +1,62 @@
+{
+  "n_questions": 100,
+  "supported_questions": 77,
+  "support_rate": 0.77,
+  "questions_with_harmful": 65,
+  "thresholds": {
+    "tau_pos": 0.2,
+    "tau_neg": -0.2
+  },
+  "by_query_type": {
+    "image_content_type_identification": {
+      "n": 50,
+      "supported": 34,
+      "rate": 0.68
+    },
+    "image_organ_identification": {
+      "n": 50,
+      "supported": 43,
+      "rate": 0.86
+    }
+  },
+  "pos_n_distribution": {
+    "0": 23,
+    "1": 2,
+    "2": 2,
+    "3": 5,
+    "5": 4,
+    "6": 2,
+    "7": 3,
+    "8": 6,
+    "9": 5,
+    "10": 2,
+    "11": 7,
+    "12": 3,
+    "13": 5,
+    "14": 2,
+    "15": 3,
+    "16": 7,
+    "17": 5,
+    "18": 4,
+    "19": 6,
+    "20": 4
+  },
+  "max_u_stats": {
+    "mean": 0.893,
+    "median": 0.8196
+  },
+  "avg_pool_n": 19.8,
+  "base_correct_rate": 0.41,
+  "config": {
+    "questions": "/mnt/data_1/yds/多模态/rerank_image_and_text/agentic/outputs/mcq_image_v2_4000/train.jsonl",
+    "sample_seed": 0,
+    "text_k": 8,
+    "image_k": 4,
+    "overfetch_k": 40,
+    "evidence_max_chars": 400,
+    "generator_device": "cuda:0"
+  },
+  "elapsed_seconds": 659.8,
+  "decision_hint": "proceed_p2（比例健康，按原计划进入 P2 题库重建）",
+  "n_errors": 0
+}
