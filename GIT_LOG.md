@@ -46,9 +46,15 @@
 
 - [x] **Harness v0.2.2 中文 query + 末轮强制提交**：检索语料为中文而大脑生成英文 query，召回质量受限；改为 POLICY 强制中文 query（基于 RETRIEVAL HINT + 图像所见改写）。效果：单轮新增证据从常为 +1 提升至 +4/+5（召回明显改善）；submit_rate 0.8 → 1.0（末轮 FINAL ROUND 提示生效，无 budget_exhausted）；正确率 3/10 持平（±2 题波动，10 题样本噪声范围内；新对 eb_1/eb_5，翻错 eb_4/eb_8）。**瓶颈转移结论**：检索侧已收敛（每题稳定积累 4-5 条证据），当前瓶颈在 4B 模型对 Organ Identification 看图题的视觉判别力——需扩大样本（v0.3）或回主线训练。落地：`brain_prompt.py` POLICY 中文要求 + RETRIEVAL HINT 文案强化 + `final_round` 参数；`agent_brain.py` 传入末轮标志。
 
+- [x] **v0.3 RAG 内部 agent 训练方案定稿**（`07_experiments/v0.3_rag_agent_training/RAG内部agent训练方案与数据构造_v0.3.md`）。旧数据诊断：(1) **图像自命中泄露**——题图本身在库中，图像路召回题图及写着答案的说明文字（train3200 中 3200/3200 题候选含题图，2143 题 top1 score>0.999），agent 学到的是捷径，EndoBench 外部图像上失效；(2) 候选全部来自图像路、文本路 0 条，改写无学习信号（REWRITE 仅 4.2%）；(3) 实际题库为模板生成的 `mcq_image_v2_4000`（未验证，2 种题型），`qa_gold_4000` 成品在 outputs 下未找到。新方案要点：
+  - 职责：大脑输出疑惑点 `info_need`，RAG 内部 agent 负责改写检索式 + 正负筛选 + 工具内多轮（K_inner=3）
+  - **恢复并升级检索记忆 M+/M-**（v0.5 `trajectory_runtime.py` 机制）：会话级共享，M+ 与证据集统一；agent 显式写入好文段及理由、错误改写方向及失败原因，程序校验
+  - 数据构造 7 步：留一 + 同书排除检索 → LLM 出题 + 盲答验证 → 合成 info_need → best-of-8 改写 → 4B 生成器单文段 utility 正负标注 → 失败/成功多轮分支 → T1–T4 四类样本
+  - 训练：**废弃 DPO，SFT → GRPO**；GRPO 奖励 = u(M+_final) + keep 精度 + M- 准确率 − 重复失败方向 − 检索次数
+
 **待办**：
 - [ ] 执行生成器切换：修改 eval/grpo 的生成器配置指向 Qwen3.5-4B；如图像编码同步切换，重建图像向量索引
-- [ ] 训练数据重构与重训（SFT → RFT/DPO → GRPO 全链路，基于新生成器重算 reward）
+- [ ] 按 v0.3 方案重构训练数据并重训（SFT → GRPO，不做 DPO；先做 P0 检索环境修正 + P1 支持度抽样）
 - [ ] Harness v0.3：EndoBench 批量评测（50-100 题，全量中文翻译缓存 6832 条已就绪）+ 与 v0.5 pipeline 对照
 - [ ] OPD 方法实现（在线策略蒸馏，内化教师/探索知识）
 
