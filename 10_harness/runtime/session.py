@@ -24,6 +24,8 @@ class AgentSession:
         options: Optional[Dict[str, Any]] = None,
         query_image_path: str = "",
         retrieval_hint: str = "",
+        exclude_sample_ids: Tuple[str, ...] = (),
+        exclude_doc_ids: Tuple[str, ...] = (),
     ):
         self.config = config
         self.rag = rag
@@ -32,6 +34,9 @@ class AgentSession:
         self.options = options or {}
         self.query_image_path = query_image_path
         self.retrieval_hint = retrieval_hint  # zh hint for the zh corpus (e.g. EndoBench translation)
+        # v0.3 P0 去泄露：rag_search 时排除题图自身样本与同书 doc_id（题目为库内来源时）
+        self.exclude_sample_ids = tuple(str(s) for s in exclude_sample_ids if s)
+        self.exclude_doc_ids = tuple(str(d) for d in exclude_doc_ids if d)
 
         self.collected: List[Dict[str, Any]] = []  # accumulated final passages across rag_search calls
         self._collected_ids: set = set()

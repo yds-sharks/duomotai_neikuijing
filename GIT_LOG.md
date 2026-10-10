@@ -59,9 +59,18 @@
   - 技能生命周期：候选 → A/B 验证 → 生效（注入提示词）→ OPD 内化（老师带技能、学生不带，在线逐 token 反向 KL）→ 归档；未验证技能不得内化
   - 自进化循环：跑题 → 标注 → 复盘 → 验证 → 内化 → 回归；EndoBench 严格不参与技能挖掘
 
+- [x] **P0 检索环境修正完成，100 题验收 PASS**（`11_v03_training/`，报告 `P0_检索环境修正报告.md`）：
+  - 新增 `data_construction/leave_one_out_retriever.py`：过量召回 k=40 → 排除题图自身（sample_id/image_path）与同书 doc_id → 两路配额合并（文本 8 / 图像 4）
+  - 新增 `p0_check_retrieval_env.py`（100 题分层抽查）与 `p0_probe_selfhit.py`（无排除对照，验证题图自命中 top1 且过滤键 SAME_IMG/SAME_SID 全匹配）
+  - harness 同步去泄露：`FullRagPipeline` 重构为"检索→去泄露过滤→两路配额→证据筛选"（TopKFilter 混排问题在管线层一并解决）；`AgentSession`/`rag_search`/`agent_brain` 传递排除键（EndoBench 外部图像键为空，行为不变）；config 新增 overfetch_k/text_quota/image_quota
+  - 验收（100 题，两题型各 50）：自命中 = 0、同书 = 0、文本候选占比 **68.1%**（旧环境对照：100/100 题过量召回中含题图自身 top1，与旧数据 3200/3200 诊断完全吻合）；文本路 100/100 题打满 8 条配额
+  - 插曲修正：过滤顺序曾"先同书后自命中"导致自命中统计被同书吸收（题图自身必属同书），已改为先自命中后同书（不影响保留集合，仅修正统计归属）
+
 **待办**：
 - [ ] 执行生成器切换：修改 eval/grpo 的生成器配置指向 Qwen3.5-4B；如图像编码同步切换，重建图像向量索引
-- [ ] 按 v0.3 方案重构训练数据并重训（SFT → GRPO，不做 DPO；先做 P0 检索环境修正 + P1 支持度抽样）
+- [x] **P0 检索环境修正**（验收 PASS，见上）
+- [ ] **P1 支持度抽样**（100 题 oracle query + 4B 生成器逐文段 utility，统计有支持题占比，决定源池是否够用）
+- [ ] 按 v0.3 方案重构训练数据并重训（SFT → GRPO，不做 DPO；P0 已完成，P2 起按总览第 8 节顺序）
 - [ ] Harness v0.3：EndoBench 批量评测（50-100 题，全量中文翻译缓存 6832 条已就绪）+ 与 v0.5 pipeline 对照
 - [ ] OPD 方法实现（按 v0.3 总览第 5 节：技能库 + A/B 验证 + 在线蒸馏内化 + 自进化循环）
 

@@ -49,6 +49,9 @@
     "nprobe": 64,
     "text_k": 20,
     "image_k": 20,
+    "overfetch_k": 40,
+    "text_quota": 8,
+    "image_quota": 4,
     "code_dir": "/mnt/data_1/yds/多模态/内窥镜agentic/05_agentic_rag/agentic/code"
   },
   "rag": {

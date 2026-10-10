@@ -40,6 +40,7 @@ class AgentBrain:
     # ------------------------------------------------------------------ episode
     def solve(self, item: Dict[str, Any]) -> Dict[str, Any]:
         """Run one question end-to-end; returns a v0.5-compatible trajectory dict."""
+        gold_source = dict(item.get("gold_source") or item.get("source") or {})
         session = AgentSession(
             config=self.config,
             rag=self._rag,
@@ -48,6 +49,9 @@ class AgentBrain:
             options=dict(item.get("options", {}) or {}),
             query_image_path=str(item.get("query_image_path", "") or ""),
             retrieval_hint=str(item.get("retrieval_hint_zh", "") or ""),
+            # v0.3 P0 去泄露：题目为库内来源时排除自身样本与同书 doc_id
+            exclude_sample_ids=(str(gold_source.get("sample_id") or ""),),
+            exclude_doc_ids=(str(gold_source.get("doc_id") or ""),),
         )
         rounds: List[Round] = []
         finish_reason = ""

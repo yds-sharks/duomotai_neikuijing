@@ -32,6 +32,9 @@ class RagSearchTool(Tool):
             image_path=session.query_image_path if use_image else "",
             question=session.question,
             options=session.options,
+            exclude_sample_ids=session.exclude_sample_ids,
+            exclude_doc_ids=session.exclude_doc_ids,
+            exclude_image_paths=(session.query_image_path,) if session.query_image_path else (),
         )
         added, dup = session.add_evidence(kept)
         repeat = "（警告：该 query 与之前重复）" if query in session.search_history else ""

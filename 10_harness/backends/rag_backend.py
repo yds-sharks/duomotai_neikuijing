@@ -98,25 +98,85 @@ def build_evidence_filter(cfg: Dict[str, Any]) -> EvidenceFilter:
 
 # --------------------------------------------------------------------- pipeline
 class RagPipelineBackend(Protocol):
-    def search(self, query: str, image_path: str, question: str, options: Dict[str, Any]) -> List[Dict[str, Any]]: ...
+    def search(
+        self,
+        query: str,
+        image_path: str,
+        question: str,
+        options: Dict[str, Any],
+        *,
+        exclude_sample_ids: tuple = (),
+        exclude_doc_ids: tuple = (),
+        exclude_image_paths: tuple = (),
+    ) -> List[Dict[str, Any]]: ...
     def close(self) -> None: ...
 
 
 class FullRagPipeline:
-    """Dual-path first-stage retrieval -> internal evidence filter -> final passages."""
+    """Dual-path retrieval -> leakage filter -> per-path quota -> evidence filter.
+
+    v0.3 P0 检索环境修正（同 11_v03_training/data_construction/leave_one_out_retriever.py）：
+    1. 留一去泄露：排除题图自身样本（sample_id / image_path）与同书 doc_id；
+    2. 两路按配额合并：文本(BGE-M3)与图像(视觉塔)分数量纲不同，旧全局混排取
+       top-k 会把文本路挤掉（0.9–1.0 的图像分占满候选）；配额默认文本 8 / 图像 4，
+       filter 拿到的已是配额后列表（TopKFilter 回落也因此不再受混排影响）。
+    """
 
     def __init__(self, config: Dict[str, Any]):
         rcfg = config["retrieval"]
         self.retrieval: RetrievalBackend = load_first_stage_retriever(config)
-        self.text_k = int(rcfg.get("text_k", 20))
-        self.image_k = int(rcfg.get("image_k", 20))
+        self.overfetch_k = int(rcfg.get("overfetch_k", 40))
+        self.text_quota = int(rcfg.get("text_quota", 8))
+        self.image_quota = int(rcfg.get("image_quota", 4))
         self.filter = build_evidence_filter(config.get("rag", {}).get("evidence_filter", {}))
 
-    def search(self, query: str, image_path: str, question: str, options: Dict[str, Any]) -> List[Dict[str, Any]]:
-        hits = self.retrieval.search_text(query, k=self.text_k)
+    @staticmethod
+    def _filter_excluded(
+        hits: List[Dict[str, Any]],
+        exclude_sample_ids: tuple,
+        exclude_image_paths: tuple,
+        exclude_doc_ids: tuple,
+    ) -> List[Dict[str, Any]]:
+        """同书/自命中排除；字段为空的候选不参与该项判断（不会误杀）。"""
+        sid = {str(s) for s in exclude_sample_ids if s}
+        img = {str(p) for p in exclude_image_paths if p}
+        doc = {str(d) for d in exclude_doc_ids if d}
+        kept: List[Dict[str, Any]] = []
+        for h in hits:
+            # 先判自命中再判同书（题图自身必属于同书，顺序与 11_v03 filter_leakage 一致）
+            sample_id = str(h.get("sample_id") or "")
+            image_path = str(h.get("image_path") or "")
+            if (sample_id and sample_id in sid) or (image_path and image_path in img):
+                continue
+            doc_id = str(h.get("doc_id") or "")
+            if doc_id and doc_id in doc:
+                continue
+            kept.append(h)
+        return kept
+
+    def search(
+        self,
+        query: str,
+        image_path: str,
+        question: str,
+        options: Dict[str, Any],
+        *,
+        exclude_sample_ids: tuple = (),
+        exclude_doc_ids: tuple = (),
+        exclude_image_paths: tuple = (),
+    ) -> List[Dict[str, Any]]:
+        text_hits: List[Dict[str, Any]] = []
+        if query and str(query).strip():
+            text_hits = self.retrieval.search_text(str(query).strip(), k=self.overfetch_k)
+            text_hits = self._filter_excluded(text_hits, exclude_sample_ids, exclude_image_paths, exclude_doc_ids)
+            text_hits = text_hits[: self.text_quota]
+        image_hits: List[Dict[str, Any]] = []
         if image_path:
-            hits += self.retrieval.search_image(image_path, k=self.image_k)
-        return self.filter.select(hits, question, options)
+            image_hits = self.retrieval.search_image(image_path, k=self.overfetch_k)
+            img_excl = tuple(exclude_image_paths) + (image_path,)  # 题图本身必排除
+            image_hits = self._filter_excluded(image_hits, exclude_sample_ids, img_excl, exclude_doc_ids)
+            image_hits = image_hits[: self.image_quota]
+        return self.filter.select(text_hits + image_hits, question, options)
 
     def close(self) -> None:
         self.retrieval.close()
@@ -128,7 +188,7 @@ class MockRagPipeline:
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.calls = 0
 
-    def search(self, query: str, image_path: str, question: str, options: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def search(self, query: str, image_path: str, question: str, options: Dict[str, Any], **_kwargs) -> List[Dict[str, Any]]:
         self.calls += 1
         if self.calls == 1:
             return [self._p(1, "img"), self._p(2, "txt")]

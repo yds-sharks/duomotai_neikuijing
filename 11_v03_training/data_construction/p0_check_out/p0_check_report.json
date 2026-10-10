@@ -1,0 +1,49 @@
+{
+  "verdict": "PASS",
+  "acceptance": {
+    "self_hit_after": 0,
+    "same_book_after": 0,
+    "avg_text_ratio": 0.6811,
+    "thresholds": {
+      "self_hit_after": 0,
+      "same_book_after": 0,
+      "avg_text_ratio_min": 0.3
+    }
+  },
+  "baseline_before_filter": {
+    "questions_with_self_hit": 100,
+    "questions_with_same_book": 97
+  },
+  "n_questions": 100,
+  "avg_total_candidates": 11.8,
+  "questions_with_zero_text": 0,
+  "text_n_dist": {
+    "8": 100
+  },
+  "image_n_dist": {
+    "4": 92,
+    "2": 5,
+    "0": 1,
+    "1": 2
+  },
+  "by_query_type": {
+    "image_content_type_identification": {
+      "n": 50,
+      "text_zero": 0,
+      "avg_ratio": 0.6747
+    },
+    "image_organ_identification": {
+      "n": 50,
+      "text_zero": 0,
+      "avg_ratio": 0.6876
+    }
+  },
+  "config": {
+    "questions": "/mnt/data_1/yds/多模态/rerank_image_and_text/agentic/outputs/mcq_image_v2_4000/train.jsonl",
+    "sample_seed": 0,
+    "text_k": 8,
+    "image_k": 4,
+    "overfetch_k": 40
+  },
+  "elapsed_seconds": 106.7
+}
