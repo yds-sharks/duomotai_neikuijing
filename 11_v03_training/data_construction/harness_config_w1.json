@@ -1,0 +1,86 @@
+{
+  "model": {
+    "hf_id": "Qwen/Qwen3.5-4B",
+    "hf_url": "https://huggingface.co/Qwen/Qwen3.5-4B",
+    "local_path": "/mnt/data_1/yds/models/hf_hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "enable_thinking": false
+  },
+  "brain": {
+    "backend": "transformers",
+    "base_url": "http://127.0.0.1:8889/v1",
+    "api_key": "EMPTY",
+    "model": "qwen3.5-4b",
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "max_tokens": 512,
+    "timeout": 120,
+    "chat_template_kwargs": {
+      "enable_thinking": false
+    },
+    "model_path": "/mnt/data_1/yds/models/hf_hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "device": "cuda:0"
+  },
+  "generator": {
+    "backend": "transformers",
+    "base_url": "http://127.0.0.1:8889/v1",
+    "api_key": "EMPTY",
+    "model": "qwen3.5-4b",
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "max_tokens": 512,
+    "logprobs": true,
+    "timeout": 120,
+    "chat_template_kwargs": {
+      "enable_thinking": false
+    },
+    "model_path": "/mnt/data_1/yds/models/hf_hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "device": "cuda:0"
+  },
+  "retrieval": {
+    "backend": "first_stage",
+    "milvus_db_path": "/mnt/data_1/yds/多模态/data_house/milvus/multimodal_vector_indexes_2.db",
+    "multimodal_search_dir": "/mnt/data_1/yds/多模态/retrieval/多模态",
+    "main_db_path": "/mnt/data_1/yds/多模态/data_house/multimodal_samples.db",
+    "text_model_path": "/mnt/data_1/yds/RAG/Hybrid_milvus/总版/pretrained_models/BAAI/bge-m3",
+    "image_model_path": "/mnt/data_10/mwx/huggingface_cache/hub/models--Qwen--Qwen3-VL-8B-Instruct/snapshots/0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "text_device": "cuda:1",
+    "image_device": "cuda:2",
+    "image_torch_dtype": "auto",
+    "nprobe": 64,
+    "text_k": 20,
+    "image_k": 20,
+    "overfetch_k": 40,
+    "text_quota": 8,
+    "image_quota": 4,
+    "code_dir": "/mnt/data_1/yds/多模态/内窥镜agentic/05_agentic_rag/agentic/code"
+  },
+  "rag": {
+    "evidence_filter": {
+      "backend": "agent",
+      "max_keep": 5,
+      "llm": {
+        "backend": "transformers",
+        "base_url": "http://127.0.0.1:8889/v1",
+        "api_key": "EMPTY",
+        "model": "qwen3.5-4b",
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "max_tokens": 256,
+        "timeout": 120,
+        "chat_template_kwargs": {
+          "enable_thinking": false
+        },
+        "model_path": "/mnt/data_1/yds/models/hf_hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+        "device": "cuda:0"
+      }
+    }
+  },
+  "budget": {
+    "max_rounds": 3,
+    "max_tool_calls": 6,
+    "max_collected": 12
+  },
+  "paths": {
+    "output_dir": "/mnt/data_1/yds/多模态/内窥镜agentic/10_harness/runs"
+  }
+}

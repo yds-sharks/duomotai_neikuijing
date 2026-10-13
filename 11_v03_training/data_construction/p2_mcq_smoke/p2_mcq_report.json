@@ -1,0 +1,47 @@
+{
+  "n_target": 2,
+  "n_pool_used": 2,
+  "n_gen_ok": 2,
+  "n_gen_error": 0,
+  "n_verified": 0,
+  "by_type": {
+    "lesion": {
+      "generated": 2,
+      "pass_l1": 0,
+      "pass_l2": 2,
+      "pass_l3": 2,
+      "verified": 0
+    },
+    "procedure": {
+      "generated": 0,
+      "pass_l1": 0,
+      "pass_l2": 0,
+      "pass_l3": 0,
+      "verified": 0
+    },
+    "spatial": {
+      "generated": 0,
+      "pass_l1": 0,
+      "pass_l2": 0,
+      "pass_l3": 0,
+      "verified": 0
+    },
+    "anatomy": {
+      "generated": 0,
+      "pass_l1": 0,
+      "pass_l2": 0,
+      "pass_l3": 0,
+      "verified": 0
+    }
+  },
+  "l2_logp_of_pass_l2": [
+    -2.15,
+    -0.7
+  ],
+  "elapsed_seconds": 112.8,
+  "thresholds": {
+    "l2": -0.5,
+    "l3_gain": 0.5,
+    "topk_l3": 3
+  }
+}

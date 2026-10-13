@@ -71,12 +71,21 @@
   - 结果：**77% 题有支持**（organ 86% / content 68%）；**真正需要检索的题（base_logp<−0.5，73 道）支持率 97.3%**；无支持 23 题中 91% 是模型空证据就能答对的题（base_logp 中位 −0.13）；65/100 题含有害文段、54/77 有支持题正负并存——正负类学习素材充足；空证据基线正确率 41%
   - 对 P2 的指导：出题源样本优先选 base 弱的；真语料盲区仅 2%；弃用 content_type 元题
 
+- [x] **P2 题库重建完成：GPT-5.6-luna 出题 8000/8000 零失败，三层验证合格 2382 道（29.8%）**（报告 `11_v03_training/P2_题库重建报告.md`）：
+  - 源池：`qa_stage1_prepared/source_pool.jsonl` 6000 源→排除小样已用→`p2_source_pool.jsonl` 5982 可用源（字段差异：query_image_path/origin_pdf）；配额按 P2a 校准：lesion 2510 / procedure 2690 / spatial 1985 / anatomy 815
+  - 两阶段脚本 `p2_generate_mcq.py`（`--stage generate|verify`，分片+断点续跑按成功 gen_id+按 gen_id 去重）；防泄露 prompt 强化（题干禁用操作/器械/分型/部位命名，procedure 只描述可见现象）→ procedure 合格率从小样 14% 升至 25.2%，L1 通过率 32%→76%
+  - 三层验证（4B logprob）：L1 题干盲答 logP<−0.25 / L2 看图盲答 logP<−0.5 / L3 oracle 留一检索可解；分题型合格率 anatomy 36.7% / spatial 34.4% / lesion 28.8% / procedure 25.2%；难度梯度四段连续覆盖（L2 logP −0.5~−6.98，中位 −1.97）
+  - 最终题库 `p2_full/p2_mcq_qualified.jsonl`（2382 道，含 info_need/evidence_span/answer_text/source）；验证明细 shard0/1 含全部 8000 题 L1/L2/L3 分数，可离线调阈值重筛
+  - 运维：中转站整站降级（上游池全部被跳过）→夜间恢复自动提速（并发 3→5→7 分段试探，吞吐 2.7→4.1→5.2 题/min）；写入层改 as_completed+每行 flush；**Milvus lite 单进程独占**→双 worker 用等大小副本 `_2.db`（config 副本 `harness_config_w1.json`）；距 3000 目标差 618 道，待补批 ~2500 题
+
 **待办**：
 - [ ] 执行生成器切换：修改 eval/grpo 的生成器配置指向 Qwen3.5-4B；如图像编码同步切换，重建图像向量索引
 - [x] **P0 检索环境修正**（验收 PASS，见上）
 - [x] **P1 支持度抽样**（支持率 77%，需检索题 97.3% 有支持，见上）
 - [x] **P2a EndoBench 分题型盲答基线**（480 题 0 错误）：4B 看图盲答全量加权 36.2%（均匀抽样 38.75%），与旧模板题 41% 同量级——出题过简不成立，但题型错位实锤：旧题 100% organ/content_type 在 EndoBench 仅占 15.3%，Lesion 类占 23% 而 4B 仅 25.9%（分级/定量最弱 17.5%）。调整建议：病灶类 35%/手术流程 25%/空间定位 25%/解剖部位 15%；选项数混 85% 四选项+15% 五六选项；L2 阈值 −0.5 有实证依据。报告 `11_v03_training/P2a_EndoBench基线与出题方向报告.md`，脚本 `p2a_endobench_baseline.py`
-- [ ] **P2 题库重建 + 疑惑点合成**（按 P2a 调整后的题型配额；GPT-5.6 出题+4B 三层验证（L1 题干盲答错/L2 看图盲答 logP<−0.5/L3 oracle 文段可解）+logP 分层保难度梯度；盲答验证器用本地 Qwen3.5-4B logprob 版，GPT 仅抽查 100 题对照；约 3000 题；同步合成 info_need）
+- [x] **P2 题库重建 + 疑惑点合成完成**（8000 出题零失败→合格 2382 道 29.8%，info_need 已随题入库，见上主记录）
+- [ ] **P2 补批 ~2500 题**（按 29.8% 通过率反推补足 3000；同链路直接跑，中转站健康时约 1.5h；源池剩 ~5000 未用源）
+- [ ] **P3：SFT 训练数据构造**（info_need 已入库；M+/M- 素材来自 L3 验证候选池）
 - [ ] 按 v0.3 方案重构训练数据并重训（SFT → GRPO，不做 DPO；P0/P1 已完成，P2 起按总览第 8 节顺序）
 - [ ] Harness v0.3：EndoBench 批量评测（50-100 题，全量中文翻译缓存 6832 条已就绪）+ 与 v0.5 pipeline 对照
 - [ ] OPD 方法实现（按 v0.3 总览第 5 节：技能库 + A/B 验证 + 在线蒸馏内化 + 自进化循环）
